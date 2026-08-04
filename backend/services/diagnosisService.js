@@ -28,6 +28,13 @@ const DISEASE_LIBRARY = [
     keywords: ['green', 'healthy', 'normal', 'clear']
   },
   {
+    disease: 'Healthy Animal or Bird',
+    severity: 'Low',
+    description: 'No visible illness or infection detected in the animal or bird.',
+    treatment: 'Maintain good nutrition, shelter, and observe the animal for any changes.',
+    keywords: ['healthy', 'normal', 'calm', 'alert']
+  },
+  {
     disease: 'Respiratory Stress',
     severity: 'Moderate',
     description: 'The animal or bird appears to be showing breathing or respiratory distress symptoms.',
@@ -55,6 +62,10 @@ const normalizeImageData = (imageData) => {
   return String(imageData).toLowerCase();
 };
 
+const AGRICULTURE_TERMS = /crop|farm|leaf|plant|maize|corn|tomato|potato|bean|rice|wheat|banana|sugarcane|cabbage|fruit|vegetable|citrus|coffee|tea|sugarcane|vine|orchard/i;
+const ANIMAL_TERMS = /cow|cattle|goat|sheep|pig|chicken|bird|poultry|duck|turkey|horse|rabbit|livestock|animal|goose|cow|calf/i;
+const INVALID_SUBJECT_TERMS = /code|codes|html|css|javascript|terminal|screen|screenshot|browser|app|website|phone|computer|software|error|git|command|console|notebook/i;
+
 const detectAuthenticImage = (imageData) => {
   const data = normalizeImageData(imageData);
   if (!data) {
@@ -76,10 +87,25 @@ const detectAuthenticImage = (imageData) => {
   return { isAuthentic: true, reason: 'Image content looks authentic.' };
 };
 
+const detectRelevantSubject = (subject) => {
+  const value = normalizeImageData(subject);
+  if (!value) {
+    return { isRelevant: false, reason: 'No subject was provided for diagnosis.' };
+  }
+  if (INVALID_SUBJECT_TERMS.test(value)) {
+    return { isRelevant: false, reason: 'The selected subject appears unrelated to agriculture or livestock.' };
+  }
+  if (AGRICULTURE_TERMS.test(value) || ANIMAL_TERMS.test(value)) {
+    return { isRelevant: true, reason: 'Subject appears relevant to the diagnosis domain.' };
+  }
+  return { isRelevant: false, reason: 'The subject provided is too generic or not a crop, animal, or bird.' };
+};
+
 const inferDiseaseFromImage = (imageData, cropType) => {
   const data = normalizeImageData(imageData);
   const cropLabel = (cropType || 'crop').toLowerCase();
-  const isAnimalCase = /cow|cattle|goat|sheep|pig|chicken|bird|poultry|duck|turkey|livestock|animal/i.test(cropLabel);
+  const isAnimalCase = ANIMAL_TERMS.test(cropLabel);
+  const isCropCase = AGRICULTURE_TERMS.test(cropLabel);
 
   const signals = {
     powdery: data.includes('powder') || data.includes('white') || data.includes('fuzzy') || data.includes('dust') || data.includes('mildew'),
@@ -88,7 +114,7 @@ const inferDiseaseFromImage = (imageData, cropType) => {
     respiratory: data.includes('cough') || data.includes('breathing') || data.includes('respiratory') || data.includes('gasp') || data.includes('wheezing'),
     skin: data.includes('wound') || data.includes('skin') || data.includes('scab') || data.includes('lesion') || data.includes('infection'),
     parasite: data.includes('parasite') || data.includes('mite') || data.includes('tick') || data.includes('lice') || data.includes('flea'),
-    healthy: data.includes('green') || data.includes('healthy') || data.includes('normal') || data.includes('leaf')
+    healthy: data.includes('green') || data.includes('healthy') || data.includes('normal') || data.includes('leaf') || data.includes('plume')
   };
 
   const ranked = Object.entries(signals)
@@ -108,17 +134,20 @@ const inferDiseaseFromImage = (imageData, cropType) => {
     diagnosis = DISEASE_LIBRARY[0];
     confidence = 0.78;
   } else if (ranked.includes('respiratory') && isAnimalCase) {
-    diagnosis = DISEASE_LIBRARY[4];
+    diagnosis = DISEASE_LIBRARY[5];
     confidence = 0.8;
   } else if (ranked.includes('skin') && isAnimalCase) {
-    diagnosis = DISEASE_LIBRARY[5];
+    diagnosis = DISEASE_LIBRARY[6];
     confidence = 0.79;
   } else if (ranked.includes('parasite') && isAnimalCase) {
-    diagnosis = DISEASE_LIBRARY[6];
+    diagnosis = DISEASE_LIBRARY[7];
     confidence = 0.81;
   } else if (isAnimalCase) {
-    diagnosis = DISEASE_LIBRARY[5];
-    confidence = 0.61;
+    diagnosis = DISEASE_LIBRARY[4];
+    confidence = 0.65;
+  } else if (isCropCase) {
+    diagnosis = DISEASE_LIBRARY[3];
+    confidence = 0.62;
   } else if (cropLabel.includes('maize') || cropLabel.includes('corn') || cropLabel.includes('tomato') || cropLabel.includes('bean')) {
     diagnosis = DISEASE_LIBRARY[1];
     confidence = 0.68;
@@ -129,22 +158,23 @@ const inferDiseaseFromImage = (imageData, cropType) => {
 
 const analyzeLeafImage = async ({ cropType, imageData }) => {
   const authenticity = detectAuthenticImage(imageData);
+  const subjectRelevance = detectRelevantSubject(cropType);
 
-  if (!authenticity.isAuthentic) {
+  if (!authenticity.isAuthentic || !subjectRelevance.isRelevant) {
     return {
       cropType: cropType || 'unknown',
       diseaseName: 'Unable to diagnose',
       severity: 'Low',
-      description: authenticity.reason,
-      treatment: 'Please upload a clear photo of the crop leaf or plant tissue.',
+      description: !authenticity.isAuthentic ? authenticity.reason : subjectRelevance.reason,
+      treatment: 'Please upload a clear photo of a crop, livestock, or bird and choose the correct subject.',
       recommendations: [
         'Upload a sharper image with good lighting',
-        'Make sure the leaf is clearly visible and in focus',
-        'Avoid screenshots, blurry images, or non-plant photos'
+        'Use a subject that matches crops, animals, or birds',
+        'Avoid screenshots of code, documents, or unrelated content'
       ],
       isAuthenticImage: false,
       confidence: 0,
-      summary: 'The image could not be validated as a genuine plant, livestock, or bird photo.'
+      summary: 'The image or subject provided is not suitable for agricultural diagnosis.'
     };
   }
 

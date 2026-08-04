@@ -220,8 +220,12 @@ const bindFormActions = () => {
 
     try {
       const result = await request('/farmer/diagnose', { method: 'POST', body: JSON.stringify(payload) });
-      const categoryLabel = diagnosisCategory === 'livestock' ? 'livestock' : diagnosisCategory === 'bird' ? 'bird' : 'crop';
-      setText('diagnosisResult', `${result.diseaseName}: ${result.severity}. ${result.treatment} (${categoryLabel})`);
+      if (!result.isAuthenticImage) {
+        setText('diagnosisResult', `${result.diseaseName}: ${result.description}`);
+      } else {
+        const categoryLabel = diagnosisCategory === 'livestock' ? 'livestock' : diagnosisCategory === 'bird' ? 'bird' : 'crop';
+        setText('diagnosisResult', `${result.diseaseName}: ${result.severity}. ${result.description} ${result.treatment} (${categoryLabel})`);
+      }
     } catch (error) {
       setText('diagnosisResult', error.message);
     }
