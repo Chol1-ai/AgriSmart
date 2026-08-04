@@ -1,0 +1,14 @@
+{
+  "name": "agrismart-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root package for Render deployment of AgriSmart backend",
+  "scripts": {
+    "install:backend": "npm install --prefix backend",
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
