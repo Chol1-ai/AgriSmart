@@ -1,11 +1,29 @@
-const { GEMINI_API_KEY, GEMINI_MODEL, GEMINI_API_URL } = require('../config/environment');
+const { GEMINI_MODEL, GEMINI_API_URL } = require('../config/environment');
 
 const DEFAULT_MODEL = 'gemini-1.5';
-const BASE_URL = GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta2/models';
-const MODEL_ID = GEMINI_MODEL || DEFAULT_MODEL;
+const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+const getGeminiConfig = () => ({
+  apiKey: process.env.GEMINI_API_KEY || require('../config/environment').GEMINI_API_KEY || '',
+  model: process.env.GEMINI_MODEL || GEMINI_MODEL || DEFAULT_MODEL,
+  apiUrl: process.env.GEMINI_API_URL || GEMINI_API_URL || DEFAULT_BASE_URL
+});
 
 const extractTextFromResponse = (payload) => {
   if (!payload) return '';
+
+  const candidate = Array.isArray(payload.candidates) ? payload.candidates[0] : null;
+  const parts = candidate?.content?.parts || [];
+
+  if (parts.length) {
+    const textParts = parts
+      .map((part) => (typeof part === 'string' ? part : part?.text || ''))
+      .filter(Boolean);
+    if (textParts.length) {
+      return textParts.join('');
+    }
+  }
+
   if (Array.isArray(payload.candidates) && payload.candidates[0]?.output) {
     return payload.candidates[0].output;
   }
@@ -50,27 +68,65 @@ If the subject or category is invalid or the image is unrelated, set isAuthentic
 `;
 };
 
+const buildInlineImagePart = (imageData) => {
+  if (!imageData) return null;
+
+  const match = String(imageData).match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    inlineData: {
+      mimeType: match[1],
+      data: match[2]
+    }
+  };
+};
+
 const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
-  if (!GEMINI_API_KEY) return null;
+  const { apiKey, model, apiUrl } = getGeminiConfig();
+  if (!apiKey) return null;
   try {
-    const url = `${BASE_URL}/${MODEL_ID}:generateText?key=${GEMINI_API_KEY}`;
+    const url = `${apiUrl}/${model}:generateContent?key=${apiKey}`;
+    const imagePart = buildInlineImagePart(imageData);
+    console.log('[Gemini] Sending diagnosis request', {
+      category,
+      subject,
+      imageLength: String(imageData || '').length,
+      hasImagePart: Boolean(imagePart),
+      model
+    });
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: { text: buildPrompt({ category, subject, imageData }) },
-        temperature: 0.2,
-        maxOutputTokens: 400
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: buildPrompt({ category, subject, imageData }) },
+            ...(imagePart ? [imagePart] : [])
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 400
+        }
       })
     });
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API response error:', response.status, errorText);
+      console.error('[Gemini] API response error:', response.status, errorText);
       return null;
     }
 
     const payload = await response.json();
     const output = extractTextFromResponse(payload).trim();
+    console.log('[Gemini] Response received', {
+      outputPreview: output.slice(0, 300),
+      payloadKeys: Object.keys(payload || {})
+    });
     if (!output) return null;
 
     const jsonText = output.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');

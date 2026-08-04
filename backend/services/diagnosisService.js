@@ -214,6 +214,12 @@ const analyzeImage = async ({ category, subject, imageData }) => {
   }
 
   const geminiResult = await queryGeminiDiagnosis({ category, subject, imageData });
+  console.log('[Diagnosis] Gemini result', {
+    hasResult: Boolean(geminiResult),
+    isAuthenticImage: geminiResult?.isAuthenticImage,
+    diseaseName: geminiResult?.diseaseName,
+    summary: geminiResult?.summary
+  });
   if (geminiResult && typeof geminiResult.isAuthenticImage === 'boolean') {
     return {
       cropType: subject || category || 'unknown',
