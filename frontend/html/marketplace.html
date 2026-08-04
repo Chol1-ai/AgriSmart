@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriSmart - Marketplace</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/marketplace.css" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="page-header">
+      <div>
+        <a class="back-link" href="farmer-dashboard.html"><i class="fas fa-arrow-left"></i> Farmer dashboard</a>
+        <h1><i class="fas fa-store"></i> Marketplace</h1>
+        <p>List your animals, crops, and products for sale.</p>
+      </div>
+      <div class="header-actions">
+        <button class="button button-outline" id="refreshButton" type="button"><i class="fas fa-sync-alt"></i>
+          Refresh</button>
+        <button class="button button-primary" id="openModalButton" type="button"><i class="fas fa-plus"></i> New
+          listing</button>
+      </div>
+    </header>
+
+    <section class="filter-bar" aria-label="Filter listings">
+      <label class="search-wrap"><i class="fas fa-search"></i><input id="searchInput" type="search"
+          placeholder="Search listings..." /></label>
+      <select id="categoryFilter" aria-label="Category">
+        <option value="all">All categories</option>
+        <option value="cattle">Cattle</option>
+        <option value="goats">Goats</option>
+        <option value="sheep">Sheep</option>
+        <option value="poultry">Poultry</option>
+        <option value="crops">Crops</option>
+        <option value="fish">Fish / aquaculture</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="statusFilter" aria-label="Status">
+        <option value="all">All status</option>
+        <option value="active">Active</option>
+        <option value="sold">Sold</option>
+        <option value="pending">Pending</option>
+      </select>
+      <select id="sortFilter" aria-label="Sort listings">
+        <option value="newest">Newest first</option>
+        <option value="price-low">Price: low to high</option>
+        <option value="price-high">Price: high to low</option>
+      </select>
+    </section>
+
+    <p class="notice" id="notice" role="status" hidden></p>
+    <section class="listings-grid" id="listingsGrid" aria-live="polite"></section>
+    <section class="empty-state" id="emptyState" hidden><i class="fas fa-box-open"></i>
+      <h2>No listings found</h2>
+      <p>Start selling your farm products by creating your first listing.</p><button class="button button-primary"
+        id="emptyStateButton" type="button"><i class="fas fa-plus"></i> Create listing</button>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="modal-header">
+        <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> New listing</h2><button id="closeModalButton"
+          class="close-button" type="button" aria-label="Close"><i class="fas fa-times"></i></button>
+      </header>
+      <form id="listingForm">
+        <label>Product name <span>*</span><input id="productName" required
+            placeholder="e.g., Organic tomatoes" /></label>
+        <div class="form-row">
+          <label>Category <span>*</span><select id="productCategory" required>
+              <option value="">Select a category</option>
+              <option value="cattle">Cattle</option>
+              <option value="goats">Goats</option>
+              <option value="sheep">Sheep</option>
+              <option value="poultry">Poultry</option>
+              <option value="crops">Crops</option>
+              <option value="fish">Fish / aquaculture</option>
+              <option value="other">Other</option>
+            </select></label>
+          <label>Price (UGX) <span>*</span><input id="productPrice" type="number" min="1" required
+              placeholder="e.g., 85000" /></label>
+        </div>
+        <div class="form-row"><label>Quantity <span>*</span><input id="productQuantity" required
+              placeholder="e.g., 20 kg or 1 animal" /></label><label>Location<input id="productLocation"
+              placeholder="e.g., Kampala, Uganda" /></label></div>
+        <div id="animalFields" hidden>
+          <div class="form-row"><label>Breed / variety<input id="animalBreed"
+                placeholder="e.g., Friesian" /></label><label>Age<select id="animalAge">
+                <option value="">Not specified</option>
+                <option value="young">Young</option>
+                <option value="middle">Middle age</option>
+                <option value="mature">Mature</option>
+              </select></label></div>
+          <div class="form-row"><label>Gender<select id="animalGender">
+              <option value="">Not specified</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="mixed">Mixed</option>
+            </select></label></div>
+        </div>
+        <label>Description <span>*</span><textarea id="productDescription" required rows="4"
+            placeholder="Describe the product, condition, health, or harvest details."></textarea></label>
+        <label>Photos <small>(optional, maximum 5 MB each)</small><span class="image-upload" id="imageUploadArea"><i
+              class="fas fa-cloud-arrow-up"></i> Choose photos or drop them here<input id="imageInput" type="file"
+              accept="image/*" multiple hidden /></span></label>
+        <div class="image-preview" id="imagePreview"></div>
+        <button class="button button-primary submit-button" type="submit"><i class="fas fa-check"></i> <span
+            id="submitText">Publish listing</span></button>
+      </form>
+    </section>
+  </div>
+  <script src="../js/marketplace.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,70 @@
+:root {
+    color-scheme: light;
+    font-family: Arial, sans-serif;
+    background: #f3f7ef;
+    color: #123;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #edf7e7, #dcefcf);
+    min-height: 100vh;
+}
+
+.auth-shell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    width: min(100%, 420px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+input,
+select,
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #c7d8b8;
+    box-sizing: border-box;
+}
+
+button {
+    background: #2d7a2d;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #245e24;
+}
+
+.dashboard {
+    padding: 24px;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.card {
+    background: white;
+    padding: 18px;
+    border-radius: 14px;
+    margin-top: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}

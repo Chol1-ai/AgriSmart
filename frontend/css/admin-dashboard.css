@@ -1,0 +1,22 @@
+:root {
+  --admin-accent: #1f5f3d;
+  --admin-surface: #f6fbf7;
+}
+
+.admin-dashboard {
+  padding: 24px;
+}
+
+.admin-dashboard .stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.admin-dashboard .stat-card {
+  background: var(--admin-surface);
+  border: 1px solid #d8ebdc;
+  border-radius: 12px;
+  padding: 16px;
+}

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriSmart - Administration</title>
+    <link rel="manifest" href="../pwa/manifest.json" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+    <div class="app-shell">
+        <nav class="sidebar" id="sidebar">
+            <div class="brand"><img src="../assets/images/AgriSmart.jpeg" alt="AgriSmart logo" style="width:44px;height:44px;border-radius:12px;object-fit:cover;" /><span>AgriSmart</span></div>
+            <div class="nav-label">Administration</div><button class="nav-item active" data-page="overview"><i
+                    class="fas fa-chart-pie"></i> System Overview</button><button class="nav-item" data-page="users"><i
+                    class="fas fa-users-cog"></i> User Management</button><button class="nav-item" data-page="alerts"><i
+                    class="fas fa-bullhorn"></i> Content & Alerts</button>
+            <div class="user-badge">
+                <div class="avatar" id="userAvatar">AD</div>
+                <div>
+                    <div class="user-name" id="userName">System Admin</div>
+                    <div class="user-role">Platform Administration</div>
+                    <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </nav>
+        <main class="main"><button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+            <section class="page active" id="page-overview">
+                <header class="page-header">
+                    <div>
+                        <h1>System Administration</h1>
+                        <div class="sub">Monitor users, content, analytics, and database health.</div>
+                    </div>
+                    <div class="actions">
+                        <button class="notification-bell" id="notificationBell" type="button" aria-label="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notificationBadge">0</span>
+                        </button>
+                        <button class="btn-primary" data-page-link="alerts"><i class="fas fa-bullhorn"></i> Create alert</button>
+                    </div>
+                    <div class="notification-panel" id="notificationPanel" hidden></div>
+                </header>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="stat-label">Users</div>
+                        <div class="stat-number" id="userCount">0</div>
+                        <div class="stat-change">Registered accounts</div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-label">Alerts</div>
+                        <div class="stat-number" id="alertCount">0</div>
+                        <div class="stat-change">Published advisories</div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-label">Database</div>
+                        <div class="stat-number" id="databaseStatus">Checking</div>
+                        <div class="stat-change up">Atlas service status</div>
+                    </div>
+                </div>
+                <p class="message" id="adminMessage" role="status"></p>
+            </section>
+            <section class="page" id="page-users">
+                <header class="page-header">
+                    <div>
+                        <h1>User Management</h1>
+                        <div class="sub">Oversee platform accounts and access roles.</div>
+                    </div>
+                </header>
+                <div class="card">
+                    <div class="card-title">Registered users</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTable">
+                                <tr>
+                                    <td colspan="3">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            <section class="page" id="page-alerts">
+                <header class="page-header">
+                    <div>
+                        <h1>Content & Alerts</h1>
+                        <div class="sub">Maintain regional advisories and system notices.</div>
+                    </div>
+                </header>
+                <div class="card">
+                    <form id="adminAlertForm"><label>Alert title<input name="title"
+                                required /></label><label>Message<textarea name="message"
+                                required></textarea></label><label>Region<input name="region" /></label><button
+                            class="btn-primary" type="submit">Create alert</button></form>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/config/api.js"></script>
+    <script src="../js/dashboards/admin-dashboard.js"></script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
+</body>
+
+</html>

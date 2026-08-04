@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriSmart | Smart Farming Platform</title>
+    <link rel="manifest" href="../pwa/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="../css/auth.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-layout">
+      <section class="brand-panel" aria-labelledby="brand-heading">
+        <div class="brand-content">
+          <a class="brand-mark" href="index.html" aria-label="AgriSmart home">
+            <span class="brand-icon"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span>
+            <span>AgriSmart</span>
+          </a>
+          <p class="eyebrow">The intelligent farm companion</p>
+          <h1 id="brand-heading">Grow smarter.<br /><span>Farm stronger.</span></h1>
+          <p class="brand-copy">One calm, connected workspace for healthier crops, thriving livestock, and better decisions every season.</p>
+
+          <div class="feature-grid" aria-label="AgriSmart features">
+            <div class="feature-item"><i class="fa-solid fa-camera" aria-hidden="true"></i><span>AI leaf scanner</span></div>
+            <div class="feature-item"><i class="fa-solid fa-water" aria-hidden="true"></i><span>Pond monitoring</span></div>
+            <div class="feature-item"><i class="fa-solid fa-cow" aria-hidden="true"></i><span>Livestock care</span></div>
+            <div class="feature-item"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Farm insights</span></div>
+          </div>
+
+          <blockquote class="testimonial">
+            <p>“The right insight at the right time changed the way I farm.”</p>
+            <cite>Mary Kiprop <span>Farmer, Nakuru</span></cite>
+          </blockquote>
+        </div>
+        <div class="panel-sun" aria-hidden="true"></div>
+        <div class="panel-stems" aria-hidden="true"><i class="fa-solid fa-wheat-awn"></i><i class="fa-solid fa-wheat-awn"></i><i class="fa-solid fa-wheat-awn"></i></div>
+      </section>
+
+      <section class="form-panel" aria-label="Account access">
+        <div class="form-panel-inner">
+          <div class="auth-tabs" role="tablist" aria-label="Account access options">
+            <button class="active" type="button" role="tab" aria-selected="true" data-tab="login">Sign in</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="register">Create account</button>
+          </div>
+
+          <div class="auth-form active" id="form-login" role="tabpanel">
+            <h2>Welcome back</h2>
+            <p class="form-subtitle">Sign in to manage your farm operations.</p>
+            <form id="loginForm">
+              <div class="form-field"><label for="loginEmail">Email address</label><div class="input-wrap"><i class="fa-regular fa-envelope" aria-hidden="true"></i><input id="loginEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" required /></div></div>
+              <div class="form-field"><label for="loginPassword">Password</label><div class="input-wrap"><i class="fa-solid fa-lock" aria-hidden="true"></i><input id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required /><button class="password-toggle" type="button" aria-label="Show password" data-target="loginPassword"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></div></div>
+              <div class="form-options"><label class="check-label"><input id="rememberMe" type="checkbox" /> <span>Remember me</span></label><a href="#">Forgot password?</a></div>
+              <button class="primary-button" type="submit"><span>Sign in</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+              <p class="status-message" id="loginMessage" aria-live="polite"></p>
+            </form>
+          </div>
+
+          <div class="auth-form" id="form-register" role="tabpanel" hidden>
+            <h2>Create your account</h2>
+            <p class="form-subtitle">Join farmers building a more resilient future.</p>
+            <form id="authForm">
+              <input id="name" type="hidden" />
+              <div class="form-row"><div class="form-field"><label for="firstName">First name</label><input id="firstName" type="text" placeholder="John" autocomplete="given-name" required /></div><div class="form-field"><label for="lastName">Last name</label><input id="lastName" type="text" placeholder="Doe" autocomplete="family-name" required /></div></div>
+              <div class="form-field"><label for="registerEmail">Email address</label><div class="input-wrap"><i class="fa-regular fa-envelope" aria-hidden="true"></i><input id="registerEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" required /></div></div>
+              <div class="form-field"><label for="registerPassword">Password</label><div class="input-wrap"><i class="fa-solid fa-lock" aria-hidden="true"></i><input id="registerPassword" name="password" type="password" placeholder="Create a strong password" autocomplete="new-password" required /><button class="password-toggle" type="button" aria-label="Show password" data-target="registerPassword"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></div><small>Minimum 6 characters.</small></div>
+              <div class="form-field"><label for="registerConfirmPassword">Confirm password</label><div class="input-wrap"><i class="fa-solid fa-check" aria-hidden="true"></i><input id="registerConfirmPassword" type="password" placeholder="Confirm your password" autocomplete="new-password" required /><button class="password-toggle" type="button" aria-label="Show password" data-target="registerConfirmPassword"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></div></div>
+              <div class="form-field"><span class="field-label">I am a...</span><div class="role-selector"><button class="role-option selected" type="button" data-role="farmer"><i class="fa-solid fa-seedling" aria-hidden="true"></i>Farmer</button><button class="role-option" type="button" data-role="expert"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i>Expert</button></div><select id="role" aria-label="Account role" hidden><option value="farmer">Farmer</option><option value="expert">Expert</option></select></div>
+              <label class="check-label terms"><input id="terms" type="checkbox" required /> <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span></label>
+              <button class="primary-button" type="submit"><span>Create account</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+              <p class="status-message" id="message" aria-live="polite"></p>
+            </form>
+          </div>
+          <p class="auth-footer" id="authFooter">Don’t have an account? <button type="button" data-switch="register">Sign up</button></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/config/api.js"></script>
+    <script src="../js/auth/login.js"></script>
+    <script src="../js/auth/register.js"></script>
+    <script src="../js/auth/auth-ui.js"></script>
+    <script>
+      (function () {
+        const tabs = Array.from(document.querySelectorAll('.auth-tabs [data-tab]'));
+        const forms = {
+          login: document.getElementById('form-login'),
+          register: document.getElementById('form-register')
+        };
+        const footer = document.getElementById('authFooter');
+
+        function showAuthForm(tabName) {
+          tabs.forEach((tab) => {
+            const isActive = tab.dataset.tab === tabName;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', String(isActive));
+          });
+
+          Object.entries(forms).forEach(([name, form]) => {
+            if (!form) return;
+            const isActive = name === tabName;
+            form.classList.toggle('active', isActive);
+            form.hidden = !isActive;
+            form.setAttribute('aria-hidden', String(!isActive));
+          });
+
+          if (footer) {
+            footer.innerHTML = tabName === 'login'
+              ? 'Don’t have an account? <button type="button" data-switch="register">Sign up</button>'
+              : 'Already have an account? <button type="button" data-switch="login">Sign in</button>';
+          }
+        }
+
+        tabs.forEach((tab) => tab.addEventListener('click', () => showAuthForm(tab.dataset.tab)));
+        if (footer) {
+          footer.addEventListener('click', (event) => {
+            const switchButton = event.target.closest('[data-switch]');
+            if (switchButton) showAuthForm(switchButton.dataset.switch);
+          });
+        }
+
+        document.querySelectorAll('.password-toggle').forEach((button) => {
+          button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.target);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            button.querySelector('i').className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+          });
+        });
+      })();
+    </script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
+  </body>
+</html>

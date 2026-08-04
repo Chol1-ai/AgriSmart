@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriSmart - Expert Advisory</title>
+    <link rel="manifest" href="../pwa/manifest.json" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+    <div class="app-shell">
+        <nav class="sidebar" id="sidebar">
+            <div class="brand"><img src="../assets/images/AgriSmart.jpeg" alt="AgriSmart logo" style="width:44px;height:44px;border-radius:12px;object-fit:cover;" /><span>AgriSmart</span></div>
+            <div class="nav-label">Expert Workspace</div><button class="nav-item active" data-page="overview"><i
+                    class="fas fa-chart-line"></i> Advisory Overview</button><button class="nav-item"
+                data-page="queries"><i class="fas fa-inbox"></i> Farmer Queries</button><button class="nav-item"
+                data-page="alerts"><i class="fas fa-bullhorn"></i> Broadcast Alerts</button>
+            <div class="user-badge">
+                <div class="avatar">EX</div>
+                <div>
+                    <div class="user-name" id="userName">Extension Worker</div>
+                    <div class="user-role">Expert Advisory</div>
+                    <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+        </nav>
+        <main class="main"><button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button>
+            <section class="page active" id="page-overview">
+                <header class="page-header">
+                    <div>
+                        <h1>Expert Advisory Panel</h1>
+                        <div class="sub">Review complex crop, livestock, and pond issues.</div>
+                    </div>
+                    <div class="actions"><button class="btn-primary" data-page-link="alerts"><i
+                                class="fas fa-bullhorn"></i> Broadcast alert</button></div>
+                </header>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="stat-label">Pending Queries</div>
+                        <div class="stat-number" id="pendingCount">0</div>
+                        <div class="stat-change">Awaiting review</div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-label">Advisories</div>
+                        <div class="stat-number">Regional</div>
+                        <div class="stat-change">Pest, weather, and water alerts</div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-label">Service</div>
+                        <div class="stat-number" style="color:#2e7d32">Ready</div>
+                        <div class="stat-change up">Extension support online</div>
+                    </div>
+                </div>
+                <p class="message" id="expertMessage" role="status"></p>
+            </section>
+            <section class="page" id="page-queries">
+                <header class="page-header">
+                    <div>
+                        <h1>Farmer Queries</h1>
+                        <div class="sub">Diagnose and respond to unresolved issues.</div>
+                    </div>
+                </header>
+                <section id="queryList"></section>
+            </section>
+            <section class="page" id="page-alerts">
+                <header class="page-header">
+                    <div>
+                        <h1>Broadcast Alerts</h1>
+                        <div class="sub">Publish localized warnings and seasonal advisories.</div>
+                    </div>
+                </header>
+                <div class="card">
+                    <form id="alertForm"><label>Alert title<input name="title"
+                                required /></label><label>Message<textarea name="message" required></textarea></label>
+                        <div class="form-grid"><label>Region<input name="region" /></label><label>Priority<select
+                                    name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select></label></div><button class="btn-primary" type="submit">Publish
+                            advisory</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/config/api.js"></script>
+    <script src="../js/dashboards/expert-dashboard.js"></script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
+</body>
+
+</html>

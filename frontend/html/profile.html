@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriSmart Profile</title>
+    <link rel="manifest" href="../pwa/manifest.json" />
+    <link rel="stylesheet" href="../css/base.css" />
+  </head>
+  <body>
+    <div class="dashboard">
+      <h1>My Profile</h1>
+      <p>Update your account details and farm information.</p>
+
+      <div class="card">
+        <h3>Account details</h3>
+        <p id="profileInfo">Loading...</p>
+      </div>
+
+      <div class="card">
+        <h3>Update profile</h3>
+        <form id="profileForm">
+          <input id="name" placeholder="Full name" />
+          <input id="phone" placeholder="Phone number" />
+          <input id="location" placeholder="Location" />
+          <input id="farmName" placeholder="Farm or pond name" />
+          <button type="submit">Save changes</button>
+        </form>
+        <p id="message"></p>
+      </div>
+    </div>
+
+    <script src="../js/config/api.js"></script>
+    <script>
+      const token = localStorage.getItem('token');
+      const profileInfo = document.getElementById('profileInfo');
+      const message = document.getElementById('message');
+      const form = document.getElementById('profileForm');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      document.getElementById('name').value = user.name || '';
+      document.getElementById('phone').value = user.phone || '';
+      document.getElementById('location').value = user.location || '';
+      document.getElementById('farmName').value = user.farmName || '';
+
+      if (!token) {
+        profileInfo.textContent = 'Please log in first.';
+      } else {
+        fetch(`${API_BASE_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            profileInfo.innerHTML = `
+              <strong>Name:</strong> ${data.user?.name || 'N/A'}<br/>
+              <strong>Email:</strong> ${data.user?.email || 'N/A'}<br/>
+              <strong>Role:</strong> ${data.user?.role || 'N/A'}<br/>
+              <strong>Location:</strong> ${data.user?.location || 'N/A'}
+            `;
+          })
+          .catch(() => {
+            profileInfo.textContent = 'Unable to load profile.';
+          });
+      }
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        fetch(`${API_BASE_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            location: document.getElementById('location').value,
+            farmName: document.getElementById('farmName').value
+          })
+        })
+          .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+          .then(({ ok, data }) => {
+            if (!ok) throw new Error(data.message || 'Profile update failed');
+            localStorage.setItem('user', JSON.stringify(data.user));
+            message.textContent = 'Profile updated successfully.';
+          })
+          .catch((error) => {
+            message.textContent = error.message;
+          });
+      });
+    </script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
+  </body>
+</html>

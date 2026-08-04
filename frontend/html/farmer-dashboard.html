@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriSmart - Farmer Dashboard</title>
+  <link rel="manifest" href="../pwa/manifest.json" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <nav class="sidebar" id="sidebar">
+      <div class="brand"><img src="../assets/images/AgriSmart.jpeg" alt="AgriSmart logo" style="width:44px;height:44px;border-radius:12px;object-fit:cover;" /><span>AgriSmart</span></div>
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" data-page="dashboard"><i class="fas fa-home"></i> Dashboard</button>
+      <button class="nav-item" data-page="crops"><i class="fas fa-seedling"></i> Crop Management</button>
+      <button class="nav-item" data-page="livestock"><i class="fas fa-cow"></i> Livestock & Poultry</button>
+      <button class="nav-item" data-page="aquaculture"><i class="fas fa-water"></i> Aquaculture / Ponds</button>
+      <button class="nav-item" data-page="finance"><i class="fas fa-coins"></i> Financial Ledger</button>
+      <div class="nav-label">Collaboration</div>
+      <a class="nav-item" href="marketplace.html"><i class="fas fa-store"></i> Marketplace</a>
+      <button class="nav-item" data-page="community"><i class="fas fa-users"></i> Community Feed</button>
+      <button class="nav-item" data-page="expert"><i class="fas fa-user-md"></i> Expert Advisory</button>
+      <div class="user-badge">
+        <div class="avatar" id="userAvatar">U</div>
+        <div>
+          <div class="user-name" id="userName">Farmer</div>
+          <div class="user-role">Farmer / Regular User</div>
+          <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+      <section class="page active" id="page-dashboard">
+        <header class="page-header">
+          <div>
+            <h1>Dashboard</h1>
+            <div class="sub" id="welcome">Your farm at a glance.</div>
+          </div>
+          <div class="actions">
+            <button class="notification-bell" id="notificationBell" type="button" aria-label="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="notification-badge" id="notificationBadge">0</span>
+            </button>
+            <button class="btn-primary" id="scanLeafButton" type="button"><i class="fas fa-camera"></i> Scan Leaf</button>
+            <button class="btn-secondary" data-page-link="livestock"><i class="fas fa-plus"></i> Add Record</button>
+          </div>
+          <div class="notification-panel" id="notificationPanel" hidden></div>
+        </header>
+        <div class="grid-4">
+          <div class="card">
+            <div class="stat-label">Active Crops</div>
+            <div class="stat-number" id="cropCount">0</div>
+            <div class="stat-change up">Live from your records</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Total Livestock</div>
+            <div class="stat-number" id="livestockCount">0</div>
+            <div class="stat-change">Animals and birds tracked</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Active Ponds</div>
+            <div class="stat-number" id="pondCount">0</div>
+            <div class="stat-change">Water systems monitored</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Support Queries</div>
+            <div class="stat-number" id="alertCount">0</div>
+            <div class="stat-change down">Pending expert review</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="card">
+            <div class="card-title">Pond Health Status <span class="badge">Live</span></div>
+            <div class="pond-scroll">
+              <div class="pond-item">
+                <div class="name">Pond A</div>
+                <div class="species">Water quality log</div>
+                <div class="status"><span class="dot green"></span> Ready to monitor</div>
+              </div>
+              <div class="pond-item">
+                <div class="name">Pond B</div>
+                <div class="species">Feed and harvest</div>
+                <div class="status"><span class="dot yellow"></span> Add readings</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent Disease Alerts <span class="badge">Guidance</span></div>
+            <div class="alert-item">
+              <div>
+                <div class="alert-title">Leaf diagnosis</div>
+                <div class="alert-desc">Upload a crop image for disease guidance.</div>
+              </div><span class="status-tag blue">Available</span>
+            </div>
+            <div class="alert-item">
+              <div>
+                <div class="alert-title">Pond water quality</div>
+                <div class="alert-desc">Log pH, temperature, DO, TAN, and turbidity.</div>
+              </div><span class="status-tag green">Ready</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="border-left:6px solid #dc2626; margin-top:18px; background:#fef6f6;"><strong><i
+              class="fas fa-triangle-exclamation"></i> Field reminder</strong> Keep pond readings and treatment
+          follow-ups current for better forecasts.</div>
+      </section>
+
+      <section class="page" id="page-crops">
+        <header class="page-header">
+          <div>
+            <h1>Crop Management</h1>
+            <div class="sub">AI disease scanner and treatment tracking</div>
+          </div>
+        </header>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">AI Scanner <span class="badge">Instant</span></div>
+            <form id="diagnosisForm"><label>Crop type<input name="cropType" placeholder="Tomato, maize, mango..."
+              required /></label><label>Leaf photo or image data<input id="imageDataInput" name="imageData" type="text"
+              placeholder="Use the camera or paste image data" required /></label><button class="btn-secondary" id="captureLeafButton" type="button"><i
+              class="fas fa-camera"></i> Open camera</button><button class="btn-primary" type="submit"><i
+              class="fas fa-microscope"></i> Analyze leaf</button></form>
+            <input id="leafImageInput" type="file" accept="image/*" capture="environment" hidden />
+            <p class="message" id="diagnosisResult" role="status"></p>
+          </div>
+          <div class="card">
+            <div class="card-title">Add Crop Record</div>
+            <form id="cropForm">
+              <div class="form-grid"><label>Crop type<input name="cropType" required /></label><label>Variety<input
+                    name="variety" /></label><label>Expected yield<input name="expectedYield" type="number" min="0"
+                    step=".01" /></label><label>Harvest date<input name="expectedHarvestDate" type="date" /></label>
+              </div><button class="btn-primary" type="submit">Save crop</button>
+            </form>
+            <p class="message" id="actionMessage" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-livestock">
+        <header class="page-header">
+          <div>
+            <h1>Livestock & Poultry</h1>
+            <div class="sub">Track ruminants, swine, poultry, and production</div>
+          </div>
+        </header>
+        <div class="grid-3">
+          <div class="card">
+            <div class="stat-label">Ruminants</div>
+            <div class="stat-number">0</div>
+            <div class="stat-change">Cattle, goats, sheep, equines</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Swine</div>
+            <div class="stat-number">0</div>
+            <div class="stat-change">Sows, boars, gilts, piglets</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Poultry</div>
+            <div class="stat-number">0</div>
+            <div class="stat-change">Chickens, turkeys, ducks, birds</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">Add Inventory</div>
+          <form id="livestockForm">
+            <div class="form-grid"><label>Category<input name="category" placeholder="Cattle, chickens, goats..."
+                  required /></label><label>Breed<input name="breed" /></label><label>Count<input name="count"
+                  type="number" min="0" required /></label></div><button class="btn-primary" type="submit">Save
+              inventory</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="page" id="page-aquaculture">
+        <header class="page-header">
+          <div>
+            <h1>Aquaculture & Ponds</h1>
+            <div class="sub">Pond operations, water quality, feeding, and harvest forecasting</div>
+          </div>
+        </header>
+        <div class="grid-4">
+          <div class="card">
+            <div class="stat-label">Active Ponds</div>
+            <div class="stat-number" id="pondCountAquaculture">0</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Total Stock</div>
+            <div class="stat-number">0</div>
+            <div class="stat-change">Fingerlings</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Water Metrics</div>
+            <div class="stat-number">5</div>
+            <div class="stat-change">pH, DO, TAN, temperature, turbidity</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Forecast</div>
+            <div class="stat-number">Live</div>
+            <div class="stat-change">Based on batch records</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">Create Pond Profile</div>
+          <form id="pondForm">
+            <div class="form-grid"><label>Pond name<input name="pondName" required /></label><label>Construction
+                type<select name="pondType">
+                  <option value="earthen">Earthen pond</option>
+                  <option value="concrete">Concrete tank</option>
+                  <option value="ras">RAS</option>
+                  <option value="floating cage">Floating cage</option>
+                </select></label><label>Species<input name="species" placeholder="Tilapia, catfish..."
+                  required /></label><label>Fingerling count<input name="fingerlingCount" type="number"
+                  min="0" /></label></div><button class="btn-primary" type="submit">Save pond</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="page" id="page-finance">
+        <header class="page-header">
+          <div>
+            <h1>Financial Ledger</h1>
+            <div class="sub">Multi-enterprise profitability tracking</div>
+          </div><button class="btn-secondary" id="reportButton"><i class="fas fa-download"></i> Export CSV</button>
+        </header>
+        <div class="grid-3">
+          <div class="card">
+            <div class="stat-label">Input costs</div>
+            <div class="stat-number">Tracked</div>
+            <div class="stat-change">Seeds, feed, medicine, equipment</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Projected revenue</div>
+            <div class="stat-number">Tracked</div>
+            <div class="stat-change">Harvest and production values</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Profitability</div>
+            <div class="stat-number">By enterprise</div>
+            <div class="stat-change up">Crop, livestock, aquaculture</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">Add Financial Record</div>
+          <form id="financeForm">
+            <div class="form-grid"><label>Enterprise type<input name="enterpriseType"
+                  placeholder="Crop, livestock, pond" required /></label><label>Category<input name="category"
+                  placeholder="Feed, seed, equipment" required /></label><label>Description<input name="description"
+                  required /></label><label>Amount<input name="amount" type="number" min="0" step=".01"
+                  required /></label></div><button class="btn-primary" type="submit">Save ledger entry</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="page" id="page-community">
+        <header class="page-header">
+          <div>
+            <h1>Community Feed</h1>
+            <div class="sub">Regional knowledge sharing and marketplace conversations</div>
+          </div>
+        </header>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Create a post <span class="badge">Moderated</span></div>
+            <form id="communityPostForm">
+              <label>Title<input name="title" maxlength="140" placeholder="What would you like to share?" required /></label>
+              <label>Category<select name="category"><option value="advice">Advice</option><option value="disease">Disease alert</option><option value="marketplace">Marketplace</option><option value="equipment">Equipment</option><option value="weather">Weather</option></select></label>
+              <label>Region<input name="region" placeholder="Your region (optional)" /></label>
+              <label>Message<textarea name="content" maxlength="2000" placeholder="Share useful information with your community" required></textarea></label>
+              <button class="btn-primary" type="submit"><i class="fas fa-paper-plane"></i> Publish post</button>
+            </form>
+            <p class="message" id="communityMessage" role="status"></p>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent posts <span class="badge" id="communityCount">Loading...</span></div>
+            <div id="communityPostList"><p class="message">Loading community posts...</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-expert">
+        <header class="page-header">
+          <div>
+            <h1>Expert Advisory</h1>
+            <div class="sub">Flag complex crop, livestock, and pond issues for review</div>
+          </div>
+        </header>
+        <div class="card">
+          <div class="card-title">Submit a support query</div>
+          <form id="supportForm">
+            <div class="form-grid"><label>Category<select name="category">
+                  <option value="crop">Crop disease</option>
+                  <option value="livestock">Livestock health</option>
+                  <option value="pond">Pond water quality</option>
+                </select></label><label>Subject<input name="subject" required /></label></div><label>Details<textarea
+                name="details" required></textarea></label><button class="btn-primary" type="submit">Request expert
+              review</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../js/config/api.js"></script>
+  <script src="../js/dashboards/farmer-dashboard.js"></script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
+</body>
+
+</html>

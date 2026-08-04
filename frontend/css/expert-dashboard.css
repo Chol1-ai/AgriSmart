@@ -1,0 +1,16 @@
+.expert-dashboard {
+  padding: 24px;
+}
+
+.expert-dashboard .queue {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.expert-dashboard .queue-item {
+  background: #fcfdf8;
+  border: 1px solid #e3ebd8;
+  border-radius: 12px;
+  padding: 14px;
+}

@@ -1,0 +1,10 @@
+{
+    "name": "AgriSmart Management Platform",
+    "short_name": "AgriSmart",
+    "start_url": "../html/index.html",
+    "display": "standalone",
+    "background_color": "#f3f7ef",
+    "theme_color": "#2d7a2d",
+    "description": "Offline-capable crop, livestock, pond, and farm management.",
+    "icons": []
+}
