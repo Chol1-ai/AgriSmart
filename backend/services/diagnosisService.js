@@ -26,6 +26,27 @@ const DISEASE_LIBRARY = [
     description: 'No major disease symptoms detected. The leaf appears largely healthy.',
     treatment: 'Continue routine care, monitor growth, and keep irrigation balanced.',
     keywords: ['green', 'healthy', 'normal', 'clear']
+  },
+  {
+    disease: 'Respiratory Stress',
+    severity: 'Moderate',
+    description: 'The animal or bird appears to be showing breathing or respiratory distress symptoms.',
+    treatment: 'Separate the affected animal, improve ventilation, and contact a veterinary professional promptly.',
+    keywords: ['cough', 'breathing', 'respiratory', 'gasp', 'wheezing']
+  },
+  {
+    disease: 'Skin Infection',
+    severity: 'Moderate',
+    description: 'The animal or bird appears to have visible skin irritation or wounds that may indicate infection.',
+    treatment: 'Clean the affected area, isolate the patient, and seek veterinary advice for treatment.',
+    keywords: ['wound', 'skin', 'scab', 'lesion', 'infection']
+  },
+  {
+    disease: 'Parasitic Infestation',
+    severity: 'Moderate',
+    description: 'The image suggests parasites or external infestation such as lice, mites, or ticks.',
+    treatment: 'Treat the animal or bird with appropriate parasite control and inspect housing conditions.',
+    keywords: ['parasite', 'mite', 'tick', 'lice', 'flea']
   }
 ];
 
@@ -58,11 +79,15 @@ const detectAuthenticImage = (imageData) => {
 const inferDiseaseFromImage = (imageData, cropType) => {
   const data = normalizeImageData(imageData);
   const cropLabel = (cropType || 'crop').toLowerCase();
+  const isAnimalCase = /cow|cattle|goat|sheep|pig|chicken|bird|poultry|duck|turkey|livestock|animal/i.test(cropLabel);
 
   const signals = {
     powdery: data.includes('powder') || data.includes('white') || data.includes('fuzzy') || data.includes('dust') || data.includes('mildew'),
     blight: data.includes('blight') || data.includes('wilt') || data.includes('burn') || data.includes('necrotic') || data.includes('brown') || data.includes('black'),
     spot: data.includes('spot') || data.includes('circular') || data.includes('speck') || data.includes('lesion'),
+    respiratory: data.includes('cough') || data.includes('breathing') || data.includes('respiratory') || data.includes('gasp') || data.includes('wheezing'),
+    skin: data.includes('wound') || data.includes('skin') || data.includes('scab') || data.includes('lesion') || data.includes('infection'),
+    parasite: data.includes('parasite') || data.includes('mite') || data.includes('tick') || data.includes('lice') || data.includes('flea'),
     healthy: data.includes('green') || data.includes('healthy') || data.includes('normal') || data.includes('leaf')
   };
 
@@ -73,6 +98,13 @@ const inferDiseaseFromImage = (imageData, cropType) => {
   if (ranked.includes('powdery')) return DISEASE_LIBRARY[2];
   if (ranked.includes('blight')) return DISEASE_LIBRARY[1];
   if (ranked.includes('spot')) return DISEASE_LIBRARY[0];
+  if (ranked.includes('respiratory') && isAnimalCase) return DISEASE_LIBRARY[4];
+  if (ranked.includes('skin') && isAnimalCase) return DISEASE_LIBRARY[5];
+  if (ranked.includes('parasite') && isAnimalCase) return DISEASE_LIBRARY[6];
+
+  if (isAnimalCase) {
+    return DISEASE_LIBRARY[5];
+  }
 
   if (cropLabel.includes('maize') || cropLabel.includes('corn') || cropLabel.includes('tomato') || cropLabel.includes('bean')) {
     return DISEASE_LIBRARY[1];
