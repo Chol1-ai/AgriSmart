@@ -95,22 +95,36 @@ const inferDiseaseFromImage = (imageData, cropType) => {
     .filter(([, hit]) => hit)
     .map(([signal]) => signal);
 
-  if (ranked.includes('powdery')) return DISEASE_LIBRARY[2];
-  if (ranked.includes('blight')) return DISEASE_LIBRARY[1];
-  if (ranked.includes('spot')) return DISEASE_LIBRARY[0];
-  if (ranked.includes('respiratory') && isAnimalCase) return DISEASE_LIBRARY[4];
-  if (ranked.includes('skin') && isAnimalCase) return DISEASE_LIBRARY[5];
-  if (ranked.includes('parasite') && isAnimalCase) return DISEASE_LIBRARY[6];
+  let diagnosis = DISEASE_LIBRARY[3];
+  let confidence = 0.54;
 
-  if (isAnimalCase) {
-    return DISEASE_LIBRARY[5];
+  if (ranked.includes('powdery')) {
+    diagnosis = DISEASE_LIBRARY[2];
+    confidence = 0.82;
+  } else if (ranked.includes('blight')) {
+    diagnosis = DISEASE_LIBRARY[1];
+    confidence = 0.86;
+  } else if (ranked.includes('spot')) {
+    diagnosis = DISEASE_LIBRARY[0];
+    confidence = 0.78;
+  } else if (ranked.includes('respiratory') && isAnimalCase) {
+    diagnosis = DISEASE_LIBRARY[4];
+    confidence = 0.8;
+  } else if (ranked.includes('skin') && isAnimalCase) {
+    diagnosis = DISEASE_LIBRARY[5];
+    confidence = 0.79;
+  } else if (ranked.includes('parasite') && isAnimalCase) {
+    diagnosis = DISEASE_LIBRARY[6];
+    confidence = 0.81;
+  } else if (isAnimalCase) {
+    diagnosis = DISEASE_LIBRARY[5];
+    confidence = 0.61;
+  } else if (cropLabel.includes('maize') || cropLabel.includes('corn') || cropLabel.includes('tomato') || cropLabel.includes('bean')) {
+    diagnosis = DISEASE_LIBRARY[1];
+    confidence = 0.68;
   }
 
-  if (cropLabel.includes('maize') || cropLabel.includes('corn') || cropLabel.includes('tomato') || cropLabel.includes('bean')) {
-    return DISEASE_LIBRARY[1];
-  }
-
-  return DISEASE_LIBRARY[3];
+  return { diagnosis, confidence };
 };
 
 const analyzeLeafImage = async ({ cropType, imageData }) => {
@@ -128,11 +142,13 @@ const analyzeLeafImage = async ({ cropType, imageData }) => {
         'Make sure the leaf is clearly visible and in focus',
         'Avoid screenshots, blurry images, or non-plant photos'
       ],
-      isAuthenticImage: false
+      isAuthenticImage: false,
+      confidence: 0,
+      summary: 'The image could not be validated as a genuine plant, livestock, or bird photo.'
     };
   }
 
-  const diagnosis = inferDiseaseFromImage(imageData, cropType);
+  const { diagnosis, confidence } = inferDiseaseFromImage(imageData, cropType);
 
   return {
     cropType: cropType || 'unknown',
@@ -141,11 +157,13 @@ const analyzeLeafImage = async ({ cropType, imageData }) => {
     description: diagnosis.description,
     treatment: diagnosis.treatment,
     recommendations: [
-      `Monitor the crop every 3 days for changes`,
+      `Monitor the subject every 3 days for changes`,
       `Keep field records of treatment applications`,
       `Consult an extension expert if symptoms worsen`
     ],
-    isAuthenticImage: true
+    isAuthenticImage: true,
+    confidence: Math.round(confidence * 100),
+    summary: `${diagnosis.disease} is the strongest match based on the visible symptom cues.`
   };
 };
 
