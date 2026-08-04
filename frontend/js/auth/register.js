@@ -16,7 +16,7 @@ if (registerForm && registerMessage) {
     const confirmPassword = document.getElementById('registerConfirmPassword')?.value || '';
     const selectedRoleOption = document.querySelector('.role-option.selected');
     const roleSelect = document.getElementById('role');
-    const role = selectedRoleOption?.dataset.role || roleSelect?.value || 'farmer';
+    const role = 'farmer';
     if (roleSelect) roleSelect.value = role;
     const location = document.getElementById('location')?.value?.trim() || '';
     const farmName = document.getElementById('farmName')?.value?.trim() || '';

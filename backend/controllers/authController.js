@@ -7,14 +7,22 @@ const generateToken = (user) => jwt.sign({ id: user._id, role: user.role }, JWT_
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, location, farmName } = req.body;
+    const { name, email, password, phone, location, farmName } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: (email || '').toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, password, role, phone, location, farmName });
+    const user = await User.create({
+      name,
+      email: (email || '').toLowerCase(),
+      password,
+      role: 'farmer',
+      phone,
+      location,
+      farmName
+    });
 
     if (farmName) {
       await Farm.create({ userId: user._id, farmName, location });
