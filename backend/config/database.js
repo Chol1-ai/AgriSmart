@@ -5,19 +5,27 @@ const User = require('../models/User');
 const createDefaultAdmin = async () => {
   if (!DEFAULT_ADMIN_EMAIL || !DEFAULT_ADMIN_PASSWORD) return;
 
-  const existingAdmin = await User.findOne({ email: DEFAULT_ADMIN_EMAIL.toLowerCase() });
+  const email = DEFAULT_ADMIN_EMAIL.toLowerCase();
+  const existingAdmin = await User.findOne({ email });
+
   if (existingAdmin) {
-    console.log(`Default admin already exists: ${DEFAULT_ADMIN_EMAIL}`);
+    const needsUpdate = existingAdmin.role !== 'admin' || existingAdmin.name !== DEFAULT_ADMIN_NAME;
+    if (needsUpdate) {
+      existingAdmin.name = DEFAULT_ADMIN_NAME;
+      existingAdmin.role = 'admin';
+      await existingAdmin.save();
+    }
+    console.log(`Default admin already exists: ${email}`);
     return;
   }
 
   await User.create({
     name: DEFAULT_ADMIN_NAME,
-    email: DEFAULT_ADMIN_EMAIL,
+    email,
     password: DEFAULT_ADMIN_PASSWORD,
     role: 'admin'
   });
-  console.log(`Default admin created: ${DEFAULT_ADMIN_EMAIL}`);
+  console.log(`Default admin created: ${email}`);
 };
 
 const connectDatabase = async () => {
