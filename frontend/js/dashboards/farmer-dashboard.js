@@ -184,9 +184,17 @@ const bindFormActions = () => {
   if (diagnosisForm) diagnosisForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = Object.fromEntries(new FormData(event.currentTarget));
+    const diagnosisCategory = formData.diagnosisCategory || 'crop';
+    const subjectValue = formData.cropType || '';
+    const payload = {
+      cropType: diagnosisCategory === 'crop' ? subjectValue : `${diagnosisCategory}: ${subjectValue}`,
+      imageData: formData.imageData
+    };
+
     try {
-      const result = await request('/farmer/diagnose', { method: 'POST', body: JSON.stringify(formData) });
-      setText('diagnosisResult', `${result.diseaseName}: ${result.severity}. ${result.treatment}`);
+      const result = await request('/farmer/diagnose', { method: 'POST', body: JSON.stringify(payload) });
+      const categoryLabel = diagnosisCategory === 'livestock' ? 'livestock' : diagnosisCategory === 'bird' ? 'bird' : 'crop';
+      setText('diagnosisResult', `${result.diseaseName}: ${result.severity}. ${result.treatment} (${categoryLabel})`);
     } catch (error) {
       setText('diagnosisResult', error.message);
     }

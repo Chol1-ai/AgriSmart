@@ -121,11 +121,19 @@
         <div class="grid-2">
           <div class="card">
             <div class="card-title">AI Scanner <span class="badge">Instant</span></div>
-            <form id="diagnosisForm"><label>Crop type<input name="cropType" placeholder="Tomato, maize, mango..."
-              required /></label><label>Leaf photo or image data<input id="imageDataInput" name="imageData" type="text"
-              placeholder="Use the camera or paste image data" required /></label><button class="btn-secondary" id="captureLeafButton" type="button"><i
-              class="fas fa-camera"></i> Open camera</button><button class="btn-primary" type="submit"><i
-              class="fas fa-microscope"></i> Analyze leaf</button></form>
+            <form id="diagnosisForm">
+              <label>Diagnosis category
+                <select name="diagnosisCategory" id="diagnosisCategory">
+                  <option value="crop">Crop</option>
+                  <option value="livestock">Livestock</option>
+                  <option value="bird">Bird</option>
+                </select>
+              </label>
+              <label>Subject<input name="cropType" id="diagnosisSubject" placeholder="Tomato, maize, cow, chicken..." required /></label>
+              <label>Image input<input id="imageDataInput" name="imageData" type="text" placeholder="Use the camera or paste image data" required /></label>
+              <button class="btn-secondary" id="captureLeafButton" type="button"><i class="fas fa-camera"></i> Open camera</button>
+              <button class="btn-primary" type="submit"><i class="fas fa-microscope"></i> Analyze image</button>
+            </form>
             <input id="leafImageInput" type="file" accept="image/*" capture="environment" hidden />
             <p class="message" id="diagnosisResult" role="status"></p>
           </div>
