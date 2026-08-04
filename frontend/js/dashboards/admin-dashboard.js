@@ -27,8 +27,8 @@ const renderNotifications = (alerts) => {
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((alert) => `
-        <div class="notification-item">
+      ? items.map((alert, index) => `
+        <div class="notification-item" data-index="${index}">
           <div class="notification-title">${alert.title || 'Alert'}</div>
           <div class="notification-meta">${alert.region || 'Regional'} • ${new Date(alert.createdAt || Date.now()).toLocaleString()}</div>
           <div class="notification-meta">${alert.message || ''}</div>
@@ -68,7 +68,6 @@ const loadSummary = async () => {
     if (alertCountEl) alertCountEl.textContent = summary.alertCount;
     if (statusEl) statusEl.textContent = summary.serviceStatus;
     await loadUsers();
-    await loadNotifications();
   } catch (error) {
     const messageEl = document.getElementById('adminMessage');
     if (messageEl) messageEl.textContent = error.message || 'Unable to load admin summary.';
@@ -132,6 +131,26 @@ const handleLogout = () => {
   localStorage.removeItem('user');
   window.location.href = 'index.html';
 };
+
+const markNotificationRead = (item) => {
+  if (!notificationPanel || !notificationBadge) return;
+  item.remove();
+  const remaining = notificationPanel.querySelectorAll('.notification-item').length;
+  if (notificationBadge) notificationBadge.textContent = remaining;
+  if (!remaining) {
+    notificationPanel.innerHTML = '<div class="notification-empty">No alerts yet.</div>';
+    if (notificationBadge) notificationBadge.textContent = '0';
+  }
+};
+
+if (notificationPanel) {
+  notificationPanel.addEventListener('click', (event) => {
+    const item = event.target.closest('.notification-item');
+    if (item) {
+      markNotificationRead(item);
+    }
+  });
+}
 
 if (notificationBell) {
   notificationBell.addEventListener('click', () => {
