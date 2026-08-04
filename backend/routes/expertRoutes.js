@@ -6,7 +6,7 @@ const { ROLE_EXPERT } = require('../utils/constants');
 const { listSupportQueries, reviewSupportQuery, broadcastAlert } = require('../controllers/expertDashboardController');
 const { reviewQueryValidator, broadcastAlertValidator } = require('../validators/expertValidator');
 
-router.use(auth, checkRole(ROLE_EXPERT));
+router.use(auth, checkRole(ROLE_EXPERT, 'admin'));
 router.get('/queries', listSupportQueries);
 router.post('/queries/:id/review', reviewQueryValidator, reviewSupportQuery);
 router.post('/broadcast', broadcastAlertValidator, broadcastAlert);
