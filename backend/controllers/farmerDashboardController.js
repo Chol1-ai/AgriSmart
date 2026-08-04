@@ -133,7 +133,7 @@ exports.submitSupportQuery = async (req, res) => {
 exports.diagnoseLeaf = async (req, res) => {
   try {
     const { cropType, imageData } = req.body;
-    const diagnosis = await analyzeLeafImage({ cropType, imageData });
+    const diagnosis = await analyzeLeafImage({ category: req.body.diagnosisCategory || 'crop', subject: cropType, imageData });
     res.json(diagnosis);
   } catch (error) {
     res.status(500).json({ message: 'Diagnosis failed', error: error.message });

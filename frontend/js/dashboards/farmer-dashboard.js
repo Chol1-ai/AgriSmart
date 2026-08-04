@@ -214,7 +214,8 @@ const bindFormActions = () => {
     const diagnosisCategory = formData.diagnosisCategory || 'crop';
     const subjectValue = formData.cropType || '';
     const payload = {
-      cropType: diagnosisCategory === 'crop' ? subjectValue : `${diagnosisCategory}: ${subjectValue}`,
+      diagnosisCategory,
+      cropType: subjectValue,
       imageData: formData.imageData
     };
 
@@ -223,8 +224,7 @@ const bindFormActions = () => {
       if (!result.isAuthenticImage) {
         setText('diagnosisResult', `${result.diseaseName}: ${result.description}`);
       } else {
-        const categoryLabel = diagnosisCategory === 'livestock' ? 'livestock' : diagnosisCategory === 'bird' ? 'bird' : 'crop';
-        setText('diagnosisResult', `${result.diseaseName}: ${result.severity}. ${result.description} ${result.treatment} (${categoryLabel})`);
+        setText('diagnosisResult', `${result.classification || diagnosisCategory.toLowerCase()} diagnosis: ${result.diseaseName} (${result.severity}). ${result.description} ${result.treatment}`);
       }
     } catch (error) {
       setText('diagnosisResult', error.message);

@@ -39,9 +39,12 @@ const supportQueryValidator = (req, res, next) => {
 };
 
 const diagnosisValidator = (req, res, next) => {
-  const { cropType, imageData } = req.body;
-  if (!cropType || !imageData) {
-    return res.status(400).json({ message: 'Crop type and image data are required for diagnosis' });
+  const { diagnosisCategory, cropType, imageData } = req.body;
+  if (!diagnosisCategory || !cropType || !imageData) {
+    return res.status(400).json({ message: 'Diagnosis category, subject, and image data are required for diagnosis' });
+  }
+  if (!['crop', 'livestock', 'bird'].includes(diagnosisCategory)) {
+    return res.status(400).json({ message: 'Diagnosis category must be crop, livestock, or bird' });
   }
   next();
 };
