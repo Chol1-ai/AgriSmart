@@ -2,7 +2,7 @@ const { GEMINI_MODEL, GEMINI_API_URL } = require('../config/environment');
 const { GoogleGenAI } = require('@google/genai');
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
-const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
 const getGeminiConfig = () => ({
   apiKey: process.env.GEMINI_API_KEY || require('../config/environment').GEMINI_API_KEY || '',
@@ -127,13 +127,17 @@ const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
       }
     });
 
-    const output = String(response?.text || '').trim();
+    const output = String(response?.text || response?.data || '').trim();
     console.log('[Gemini] Response received', {
       outputPreview: output.slice(0, 300),
       hasText: Boolean(output),
+      hasData: Boolean(response?.data),
       model
     });
-    if (!output) return null;
+    if (!output) {
+      console.error('[Gemini] No text or data returned from response', { response });
+      return null;
+    }
 
     const jsonText = output.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');
     try {
