@@ -2,7 +2,7 @@ const { GEMINI_MODEL, GEMINI_API_URL } = require('../config/environment');
 const { GoogleGenAI } = require('@google/genai');
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
-const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
 
 const getGeminiConfig = () => ({
   apiKey: process.env.GEMINI_API_KEY || require('../config/environment').GEMINI_API_KEY || '',
@@ -127,22 +127,31 @@ const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
       }
     });
 
-    const output = String(response?.text || response?.data || '').trim();
+    const payload = response?.data ?? response;
+    const output = typeof payload === 'string'
+      ? payload.trim()
+      : extractTextFromResponse(payload).trim();
+
+    const fallbackText = typeof response?.text === 'string'
+      ? response.text.trim()
+      : '';
+
+    const rawOutput = output || fallbackText;
     console.log('[Gemini] Response received', {
-      outputPreview: output.slice(0, 300),
-      hasText: Boolean(output),
-      hasData: Boolean(response?.data),
+      textPreview: rawOutput.slice(0, 300),
+      hasText: Boolean(rawOutput),
+      payloadKeys: response ? Object.keys(response) : [],
       model
     });
-    if (!output) {
-      console.error('[Gemini] No text or data returned from response', { response });
+
+    if (!rawOutput) {
+      console.error('[Gemini] No usable output returned from response', { response });
       return null;
     }
 
-    const jsonText = output.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');
+    const jsonText = rawOutput.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');
     try {
-      const parsed = JSON.parse(jsonText);
-      return parsed;
+      return JSON.parse(jsonText);
     } catch (error) {
       console.error('Gemini parse error:', error.message, jsonText);
       return null;
@@ -153,4 +162,4 @@ const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
   }
 };
 
-module.exports = { queryGeminiDiagnosis };
+module.exports = { queryGeminiDiagnosis, createGeminiClient };

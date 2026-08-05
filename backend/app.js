@@ -35,7 +35,13 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve HTML pages from the dedicated frontend/html folder first,
+// then fall back to other frontend assets such as CSS, JS, images, and PWA files.
+app.use(express.static(path.join(__dirname, '../frontend/html')));
 app.use(express.static(path.join(__dirname, '../frontend')));
+app.get('/favicon.ico', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/assets/images/AgriSmart.jpeg'));
+});
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/html/index.html'));

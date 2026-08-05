@@ -13,7 +13,9 @@ module.exports = {
   EMAIL_USER: process.env.EMAIL_USER || '',
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/agrismart',
+  LOCAL_MONGODB_URI: process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/agrismart',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-  GEMINI_API_URL: process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta'
+  GEMINI_API_URL: process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com'
 };
