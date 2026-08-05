@@ -237,7 +237,21 @@ const analyzeImage = async ({ category, subject, imageData }) => {
   }
 
   const { diagnosis, confidence } = inferDiseaseFromImage(category, subject, imageData);
-  return buildFallbackResult(category, subject, diagnosis, confidence);
+  return {
+    cropType: subject || category || 'unknown',
+    diseaseName: 'Unable to diagnose',
+    severity: 'Low',
+    description: 'Gemini did not return a usable diagnosis for this image. Please try another image or verify the API configuration.',
+    treatment: 'Upload a clearer photo and try again, or contact support if the issue persists.',
+    recommendations: [
+      'Capture a sharper image with good lighting',
+      'Choose the correct category for crop, livestock, or bird',
+      'Retry the analysis after verifying the Gemini API key'
+    ],
+    isAuthenticImage: true,
+    confidence: Math.round(confidence * 100),
+    summary: 'Gemini was unavailable or returned an invalid response, so no diagnosis was produced.'
+  };
 };
 
 module.exports = { analyzeImage, analyzeLeafImage: analyzeImage, DISEASE_LIBRARY };

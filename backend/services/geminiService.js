@@ -1,6 +1,7 @@
 const { GEMINI_MODEL, GEMINI_API_URL } = require('../config/environment');
+const { GoogleGenAI } = require('@google/genai');
 
-const DEFAULT_MODEL = 'gemini-1.5';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const getGeminiConfig = () => ({
@@ -8,6 +9,15 @@ const getGeminiConfig = () => ({
   model: process.env.GEMINI_MODEL || GEMINI_MODEL || DEFAULT_MODEL,
   apiUrl: process.env.GEMINI_API_URL || GEMINI_API_URL || DEFAULT_BASE_URL
 });
+
+const createGeminiClient = ({ apiKey, apiUrl }) => {
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      baseUrl: apiUrl
+    }
+  });
+};
 
 const extractTextFromResponse = (payload) => {
   if (!payload) return '';
@@ -87,45 +97,41 @@ const buildInlineImagePart = (imageData) => {
 const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
   const { apiKey, model, apiUrl } = getGeminiConfig();
   if (!apiKey) return null;
-  try {
-    const url = `${apiUrl}/${model}:generateContent?key=${apiKey}`;
-    const imagePart = buildInlineImagePart(imageData);
-    console.log('[Gemini] Sending diagnosis request', {
-      category,
-      subject,
-      imageLength: String(imageData || '').length,
-      hasImagePart: Boolean(imagePart),
-      model
-    });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
+  const ai = createGeminiClient({ apiKey, apiUrl });
+  const imagePart = buildInlineImagePart(imageData);
+  console.log('[Gemini] Sending diagnosis request', {
+    category,
+    subject,
+    imageLength: String(imageData || '').length,
+    hasImagePart: Boolean(imagePart),
+    model,
+    apiUrl
+  });
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
           role: 'user',
           parts: [
             { text: buildPrompt({ category, subject, imageData }) },
             ...(imagePart ? [imagePart] : [])
           ]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 400
         }
-      })
+      ],
+      config: {
+        temperature: 0.2,
+        maxOutputTokens: 400
+      }
     });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Gemini] API response error:', response.status, errorText);
-      return null;
-    }
 
-    const payload = await response.json();
-    const output = extractTextFromResponse(payload).trim();
+    const output = String(response?.text || '').trim();
     console.log('[Gemini] Response received', {
       outputPreview: output.slice(0, 300),
-      payloadKeys: Object.keys(payload || {})
+      hasText: Boolean(output),
+      model
     });
     if (!output) return null;
 
@@ -138,7 +144,7 @@ const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
       return null;
     }
   } catch (error) {
-    console.error('Gemini diagnosis error:', error.message);
+    console.error('Gemini diagnosis error:', error?.message || error);
     return null;
   }
 };
