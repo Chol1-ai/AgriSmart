@@ -138,8 +138,10 @@ exports.updateCrop = async (req, res) => {
 exports.deleteCrop = async (req, res) => {
   try {
     const { id } = req.params;
-    const crop = await Crop.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
+    const crop = await Crop.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true, deletedAt: new Date() } }, { new: true });
     if (!crop) return res.status(404).json({ message: 'Crop not found' });
+    // audit
+    try { const Audit = require('../models/AuditLog'); await Audit.create({ action: 'soft-delete', userId: req.user._id, targetType: 'Crop', targetId: crop._id }); } catch (_) {}
     res.json({ message: 'Crop deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Unable to delete crop', error: error.message });
@@ -161,8 +163,9 @@ exports.updateLivestock = async (req, res) => {
 exports.deleteLivestock = async (req, res) => {
   try {
     const { id } = req.params;
-    const animal = await Livestock.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
+    const animal = await Livestock.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true, deletedAt: new Date() } }, { new: true });
     if (!animal) return res.status(404).json({ message: 'Livestock record not found' });
+    try { const Audit = require('../models/AuditLog'); await Audit.create({ action: 'soft-delete', userId: req.user._id, targetType: 'Livestock', targetId: animal._id }); } catch (_) {}
     res.json({ message: 'Livestock record deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Unable to delete livestock', error: error.message });
@@ -184,8 +187,9 @@ exports.updatePond = async (req, res) => {
 exports.deletePond = async (req, res) => {
   try {
     const { id } = req.params;
-    const pond = await Pond.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
+    const pond = await Pond.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true, deletedAt: new Date() } }, { new: true });
     if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    try { const Audit = require('../models/AuditLog'); await Audit.create({ action: 'soft-delete', userId: req.user._id, targetType: 'Pond', targetId: pond._id }); } catch (_) {}
     res.json({ message: 'Pond deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Unable to delete pond', error: error.message });
