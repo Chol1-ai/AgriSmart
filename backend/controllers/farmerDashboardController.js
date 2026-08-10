@@ -123,6 +123,75 @@ exports.createPond = async (req, res) => {
   }
 };
 
+exports.updateCrop = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const crop = await Crop.findOneAndUpdate({ _id: id, userId: req.user._id }, { $set: updates }, { new: true });
+    if (!crop) return res.status(404).json({ message: 'Crop not found' });
+    res.json(crop);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to update crop', error: error.message });
+  }
+};
+
+exports.deleteCrop = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const crop = await Crop.findOneAndDelete({ _id: id, userId: req.user._id });
+    if (!crop) return res.status(404).json({ message: 'Crop not found' });
+    res.json({ message: 'Crop deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to delete crop', error: error.message });
+  }
+};
+
+exports.updateLivestock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const animal = await Livestock.findOneAndUpdate({ _id: id, userId: req.user._id }, { $set: updates }, { new: true });
+    if (!animal) return res.status(404).json({ message: 'Livestock record not found' });
+    res.json(animal);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to update livestock', error: error.message });
+  }
+};
+
+exports.deleteLivestock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const animal = await Livestock.findOneAndDelete({ _id: id, userId: req.user._id });
+    if (!animal) return res.status(404).json({ message: 'Livestock record not found' });
+    res.json({ message: 'Livestock record deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to delete livestock', error: error.message });
+  }
+};
+
+exports.updatePond = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const pond = await Pond.findOneAndUpdate({ _id: id, userId: req.user._id }, { $set: updates }, { new: true });
+    if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    res.json(pond);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to update pond', error: error.message });
+  }
+};
+
+exports.deletePond = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pond = await Pond.findOneAndDelete({ _id: id, userId: req.user._id });
+    if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    res.json({ message: 'Pond deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to delete pond', error: error.message });
+  }
+};
+
 exports.listPonds = async (req, res) => {
   try {
     const ponds = await Pond.find({ userId: req.user._id }).sort({ createdAt: -1 });

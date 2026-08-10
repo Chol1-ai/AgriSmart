@@ -78,28 +78,17 @@
         <div class="grid-2" style="margin-top:18px;">
           <div class="card">
             <div class="card-title">Pond Health Status <span class="badge">Live</span></div>
-            <div class="pond-scroll">
-              <div class="pond-item">
-                <div class="name">Pond A</div>
-                <div class="species">Water quality log</div>
-                <div class="status"><span class="dot green"></span> Ready to monitor</div>
-              </div>
-              <div class="pond-item">
-                <div class="name">Pond B</div>
-                <div class="species">Feed and harvest</div>
-                <div class="status"><span class="dot yellow"></span> Add readings</div>
-              </div>
-            </div>
+            <div id="pondHealthList" class="pond-scroll"></div>
           </div>
           <div class="card">
             <div class="card-title">Recent Disease Alerts <span class="badge">Guidance</span></div>
-            <div class="alert-item">
+            <div class="alert-item card-interactive" tabindex="0" data-page-link="crops">
               <div>
                 <div class="alert-title">Leaf diagnosis</div>
                 <div class="alert-desc">Upload a crop image for disease guidance.</div>
               </div><span class="status-tag blue">Available</span>
             </div>
-            <div class="alert-item">
+            <div class="alert-item card-interactive" tabindex="0" data-page-link="aquaculture">
               <div>
                 <div class="alert-title">Pond water quality</div>
                 <div class="alert-desc">Log pH, temperature, DO, TAN, and turbidity.</div>

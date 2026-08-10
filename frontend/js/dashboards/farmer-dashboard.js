@@ -85,6 +85,7 @@ const renderDashboard = (data) => {
 
   populateInventoryFilters(crops, livestock);
   applyInventoryFilters(crops, livestock, ponds);
+  renderPondHealthStatus(ponds);
 
   const supportQueryCard = document.getElementById('supportQueryCard');
   const supportQueryStatus = document.getElementById('supportQueryStatus');
@@ -122,14 +123,20 @@ const formatAge = (value) => {
 };
 
 const renderTable = (headers, rows) => {
+  const actionHeader = 'Actions';
+  const fullHeaders = [...headers, actionHeader];
   return `
     <table class="inventory-table">
       <thead>
-        <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
+        <tr>${fullHeaders.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
       </thead>
       <tbody>
-        ${rows.length ? rows.map((row) => `
-          <tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="' + headers.length + '">No records available.</td></tr>'}
+        ${rows.length ? rows.map((row) => {
+          const id = row && row.id ? row.id : '';
+          const cells = row && row.cells ? row.cells : row;
+          return `
+          <tr data-record-id="${escapeHtml(id)}">${cells.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}<td><button class="btn-secondary btn-edit" data-id="${escapeHtml(id)}">Edit</button> <button class="btn-danger btn-delete" data-id="${escapeHtml(id)}">Delete</button></td></tr>`;
+        }).join('') : '<tr><td colspan="' + fullHeaders.length + '">No records available.</td></tr>'}
       </tbody>
     </table>`;
 };
@@ -138,6 +145,65 @@ const renderInventoryGroup = (containerId, title, headers, rows) => {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = `<div class="inventory-group-title">${escapeHtml(title)}</div>${renderTable(headers, rows)}`;
+  // mark container with a target page for quick navigation when rows are clicked
+  if (['goatInventory', 'cowInventory', 'pigInventory', 'otherLivestockInventory'].includes(containerId)) {
+    container.dataset.targetPage = 'livestock';
+  } else if (containerId === 'cropInventory') {
+    container.dataset.targetPage = 'crops';
+  } else if (containerId === 'fishInventory') {
+    container.dataset.targetPage = 'aquaculture';
+  } else {
+    delete container.dataset.targetPage;
+  }
+};
+
+const getPondStatus = (pond) => {
+  const latest = (pond.waterQualityRecords || []).slice(-1)[0];
+  const feedCount = (pond.feedRecords || []).length;
+  if (latest) {
+    return {
+      label: 'Ready to monitor',
+      dotClass: 'green',
+      detail: `Last reading: pH ${escapeHtml(String(latest.pH || 'N/A'))}, ${escapeHtml(String(latest.temperature || 'N/A'))}°C`
+    };
+  }
+  if (feedCount > 0) {
+    return {
+      label: 'Add water quality reading',
+      dotClass: 'yellow',
+      detail: `Feed records: ${feedCount}`
+    };
+  }
+  return {
+    label: 'Add readings',
+    dotClass: 'red',
+    detail: 'No pond readings yet'
+  };
+};
+
+const openPondDetail = (pondId) => {
+  const select = document.getElementById('pondSelection');
+  if (!select || !pondId) return;
+  select.value = pondId;
+  showPondSummary(pondId);
+};
+
+const renderPondHealthStatus = (ponds) => {
+  const list = document.getElementById('pondHealthList');
+  if (!list) return;
+  const pondItems = Array.isArray(ponds) ? ponds : [];
+  list.innerHTML = pondItems.length
+    ? pondItems.map((pond) => {
+      const status = getPondStatus(pond);
+      return `
+        <div class="pond-item card-interactive" tabindex="0" data-page-link="aquaculture" data-pond-id="${escapeHtml(pond._id)}">
+          <div class="name">${escapeHtml(pond.pondName || 'Unnamed pond')}</div>
+          <div class="species">${escapeHtml(pond.species || 'Unknown species')}</div>
+          <div class="status"><span class="dot ${status.dotClass}"></span>${escapeHtml(status.label)}</div>
+          <div class="alert-desc">${escapeHtml(status.detail)}</div>
+        </div>`;
+    }).join('')
+    : '<div class="message">No pond profiles available yet. Add a pond to get started.</div>';
 };
 
 const getInventoryFilters = () => {
@@ -174,10 +240,16 @@ const renderInventory = (crops, livestock, ponds, filters = {}) => {
   const pigRows = filteredLivestock.filter((item) => /pig|swine/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
   const otherRows = filteredLivestock.filter((item) => !/goat|cow|cattle|pig|swine/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
 
-  renderInventoryGroup('goatInventory', 'Goats', ['Category', 'Breed', 'Count', 'Age'], goatRows);
-  renderInventoryGroup('cowInventory', 'Cattle / Cows', ['Category', 'Breed', 'Count', 'Age'], cowRows);
-  renderInventoryGroup('pigInventory', 'Pigs & Swine', ['Category', 'Breed', 'Count', 'Age'], pigRows);
-  renderInventoryGroup('otherLivestockInventory', 'Other Livestock', ['Category', 'Breed', 'Count', 'Age'], otherRows);
+  // attach ids to rows so tables render edit/delete buttons with correct ids
+  const goatRowsMeta = filteredLivestock.filter((item) => /goat/i.test(item.category || '')).map((item) => ({ id: item._id, cells: [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)] }));
+  const cowRowsMeta = filteredLivestock.filter((item) => /cow|cattle/i.test(item.category || '')).map((item) => ({ id: item._id, cells: [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)] }));
+  const pigRowsMeta = filteredLivestock.filter((item) => /pig|swine/i.test(item.category || '')).map((item) => ({ id: item._id, cells: [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)] }));
+  const otherRowsMeta = filteredLivestock.filter((item) => !/goat|cow|cattle|pig|swine/i.test(item.category || '')).map((item) => ({ id: item._id, cells: [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)] }));
+
+  renderInventoryGroup('goatInventory', 'Goats', ['Category', 'Breed', 'Count', 'Age'], goatRowsMeta);
+  renderInventoryGroup('cowInventory', 'Cattle / Cows', ['Category', 'Breed', 'Count', 'Age'], cowRowsMeta);
+  renderInventoryGroup('pigInventory', 'Pigs & Swine', ['Category', 'Breed', 'Count', 'Age'], pigRowsMeta);
+  renderInventoryGroup('otherLivestockInventory', 'Other Livestock', ['Category', 'Breed', 'Count', 'Age'], otherRowsMeta);
 
   const cropItems = Array.isArray(crops) ? crops : [];
   const filteredCrops = cropItems.filter((item) => {
@@ -185,11 +257,13 @@ const renderInventory = (crops, livestock, ponds, filters = {}) => {
     return true;
   });
   const cropRows = filteredCrops.map((item) => [item.cropType || 'Unknown', item.variety || 'N/A', formatDate(item.plantingDate), formatDate(item.expectedHarvestDate), String(item.expectedYield || 0)]);
-  renderInventoryGroup('cropInventory', 'Crop inventory', ['Crop type', 'Variety', 'Planted', 'Harvest due', 'Expected yield'], cropRows);
+  const cropRowsMeta = filteredCrops.map((item) => ({ id: item._id, cells: [item.cropType || 'Unknown', item.variety || 'N/A', formatDate(item.plantingDate), formatDate(item.expectedHarvestDate), String(item.expectedYield || 0)] }));
+  renderInventoryGroup('cropInventory', 'Crop inventory', ['Crop type', 'Variety', 'Planted', 'Harvest due', 'Expected yield'], cropRowsMeta);
 
   const pondItems = Array.isArray(ponds) ? ponds : [];
   const fishRows = pondItems.map((item) => [item.pondName || 'Unnamed pond', item.species || 'Unknown', String(item.fingerlingCount || 0), item.pondType || 'N/A', formatAge(item.createdAt)]);
-  renderInventoryGroup('fishInventory', 'Pond / Fish inventory', ['Pond name', 'Species', 'Fingerlings', 'Type', 'Registered age'], fishRows);
+  const fishRowsMeta = pondItems.map((item) => ({ id: item._id, cells: [item.pondName || 'Unnamed pond', item.species || 'Unknown', String(item.fingerlingCount || 0), item.pondType || 'N/A', formatAge(item.createdAt)] }));
+  renderInventoryGroup('fishInventory', 'Pond / Fish inventory', ['Pond name', 'Species', 'Fingerlings', 'Type', 'Registered age'], fishRowsMeta);
 
   const animalCount = filteredLivestock.reduce((sum, item) => sum + Number(item.count || 0), 0);
   const cropCount = filteredCrops.length;
@@ -274,11 +348,12 @@ const renderPonds = (ponds) => {
   if (pondList) {
     pondList.innerHTML = pondsCache.length
       ? pondsCache.map((pond) => `
-          <article class="alert-item">
+          <article class="alert-item card-interactive" tabindex="0" data-page-link="aquaculture" data-pond-id="${escapeHtml(pond._id)}">
             <div><div class="alert-title">${escapeHtml(pond.pondName)}</div><div class="alert-desc">${escapeHtml(pond.species)} • ${escapeHtml(pond.pondType)}</div><p>Fingerlings: ${escapeHtml(String(pond.fingerlingCount || 0))} | Records: WQ ${pond.waterQualityRecords?.length || 0}, Feed ${pond.feedRecords?.length || 0}</p></div>
           </article>`).join('')
       : '<p class="message">No pond records yet. Create a pond to begin logging.</p>';
   }
+  renderPondHealthStatus(ponds);
 };
 
 const populatePondSelection = (ponds) => {
@@ -431,7 +506,7 @@ const loadCommunityPosts = async () => {
       const author = post.userId?.name || 'AgriSmart user';
       const location = post.region || post.userId?.location || 'Regional';
       const date = post.createdAt ? new Date(post.createdAt).toLocaleString() : 'Just now';
-      return `<article class="alert-item"><div><div class="alert-title">${escapeHtml(post.title)}</div><div class="alert-desc">${escapeHtml(author)} · ${escapeHtml(location)} · ${escapeHtml(date)}</div><p>${escapeHtml(post.content)}</p></div><span class="status-tag blue">${escapeHtml(post.category)}</span></article>`;
+        return `<article class="alert-item" data-page-link="community" data-post-id="${escapeHtml(post._id || '')}"><div><div class="alert-title">${escapeHtml(post.title)}</div><div class="alert-desc">${escapeHtml(author)} · ${escapeHtml(location)} · ${escapeHtml(date)}</div><p>${escapeHtml(post.content)}</p></div><span class="status-tag blue">${escapeHtml(post.category)}</span></article>`;
     }).join('') : '<p class="message">No community posts yet. Be the first to share an update.</p>';
   } catch (error) {
     list.innerHTML = `<p class="message">${escapeHtml(error.message || 'Unable to load community posts.')}</p>`;
@@ -664,16 +739,45 @@ const bindNavigation = () => {
     navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageName));
     pages.forEach((page) => page.classList.toggle('active', page.id === `page-${pageName}`));
     if (sidebar) sidebar.classList.remove('open');
+    if (pageName === 'dashboard') startPondPolling(); else stopPondPolling();
+  };
+  let pondPollingId = null;
+  const startPondPolling = () => {
+    if (pondPollingId) return;
+    pondPollingId = setInterval(() => {
+      if (document.querySelector('.page.active')?.id === 'page-dashboard') {
+        loadPonds().catch(() => {});
+        loadDashboard().catch(() => {});
+      }
+    }, 30000);
+  };
+  const stopPondPolling = () => {
+    if (!pondPollingId) return;
+    clearInterval(pondPollingId);
+    pondPollingId = null;
   };
   navItems.forEach((item) => item.addEventListener('click', () => showPage(item.dataset.page)));
-  document.querySelectorAll('[data-page-link]').forEach((item) => {
-    item.addEventListener('click', () => showPage(item.dataset.pageLink));
-    item.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
+  const navigateCard = (target) => {
+    const pageLink = target.dataset.pageLink;
+    const pondId = target.dataset.pondId;
+    if (!pageLink) return;
+    showPage(pageLink);
+    if (pondId) {
+      openPondDetail(pondId);
+    }
+  };
+  document.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-page-link]');
+    if (target) navigateCard(target);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      const target = event.target.closest('[data-page-link]');
+      if (target) {
         event.preventDefault();
-        showPage(item.dataset.pageLink);
+        navigateCard(target);
       }
-    });
+    }
   });
   if (localStorage.getItem('agrismart.sidebarCollapsed') === 'true' && sidebar) {
     sidebar.classList.add('collapsed');
@@ -707,6 +811,135 @@ loadNotifications();
 loadSupportHistory();
 loadCommunityPosts();
 syncOfflineOperations();
+
+// Navigate to details when clicking inventory rows
+document.addEventListener('click', (event) => {
+  const row = event.target.closest('.inventory-table tbody tr');
+  if (!row) return;
+  const container = row.closest('.inventory-group');
+  const targetPage = container?.dataset?.targetPage;
+  if (targetPage) {
+    document.querySelector(`[data-page="${targetPage}"]`)?.click();
+  }
+});
+
+// Edit / Delete handlers for inventory
+document.addEventListener('click', async (event) => {
+  const editBtn = event.target.closest('.btn-edit');
+  const deleteBtn = event.target.closest('.btn-delete');
+  if (editBtn) {
+    const id = editBtn.dataset.id;
+    handleEditRecord(id);
+    return;
+  }
+  if (deleteBtn) {
+    const id = deleteBtn.dataset.id;
+    if (!confirm('Delete this record? This action cannot be undone.')) return;
+    try {
+      // determine type by finding row's closest inventory group
+      const row = deleteBtn.closest('tr');
+      const container = row.closest('.inventory-group');
+      const groupId = container?.id;
+      if (groupId === 'cropInventory') {
+        await request(`/farmer/crops/${id}`, { method: 'DELETE' });
+      } else if (groupId === 'fishInventory') {
+        await request(`/farmer/ponds/${id}`, { method: 'DELETE' });
+      } else {
+        await request(`/farmer/livestock/${id}`, { method: 'DELETE' });
+      }
+      showToast('Record deleted.', 'success');
+      await loadDashboard();
+      await loadPonds();
+    } catch (error) {
+      showToast(error.message || 'Delete failed', 'error');
+    }
+  }
+});
+
+const handleEditRecord = async (id) => {
+  // fetch record from dashboard caches and prefill appropriate form
+  const crop = (window.dashboardCrops || []).find((c) => c._id === id);
+  if (crop) {
+    const form = document.getElementById('cropForm');
+    if (!form) return;
+    form.elements['cropType'].value = crop.cropType || '';
+    form.elements['variety'].value = crop.variety || '';
+    form.elements['plantingDate'].value = crop.plantingDate ? new Date(crop.plantingDate).toISOString().slice(0,10) : '';
+    form.elements['expectedHarvestDate'].value = crop.expectedHarvestDate ? new Date(crop.expectedHarvestDate).toISOString().slice(0,10) : '';
+    form.elements['expectedYield'].value = crop.expectedYield || '';
+    // switch to crops page
+    document.querySelector('[data-page="crops"]')?.click();
+    // change submit to PUT
+    form.dataset.editId = id;
+    form.removeEventListener('submit', form._submitHandler);
+    form._submitHandler = async (event) => {
+      event.preventDefault();
+      try {
+        await request(`/farmer/crops/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+        showToast('Crop updated.', 'success');
+        delete form.dataset.editId;
+        form.reset();
+        await loadDashboard();
+      } catch (error) {
+        showToast(error.message || 'Update failed', 'error');
+      }
+    };
+    form.addEventListener('submit', form._submitHandler);
+    return;
+  }
+  const animal = (window.dashboardLivestock || []).find((a) => a._id === id);
+  if (animal) {
+    const form = document.getElementById('livestockForm');
+    if (!form) return;
+    form.elements['category'].value = animal.category || '';
+    form.elements['breed'].value = animal.breed || '';
+    form.elements['count'].value = animal.count || '';
+    document.querySelector('[data-page="livestock"]')?.click();
+    form.dataset.editId = id;
+    form.removeEventListener('submit', form._submitHandler);
+    form._submitHandler = async (event) => {
+      event.preventDefault();
+      try {
+        await request(`/farmer/livestock/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+        showToast('Livestock updated.', 'success');
+        delete form.dataset.editId;
+        form.reset();
+        await loadDashboard();
+      } catch (error) {
+        showToast(error.message || 'Update failed', 'error');
+      }
+    };
+    form.addEventListener('submit', form._submitHandler);
+    return;
+  }
+  const pond = (window.dashboardPonds || []).find((p) => p._id === id);
+  if (pond) {
+    const form = document.getElementById('pondForm');
+    if (!form) return;
+    form.elements['pondName'].value = pond.pondName || '';
+    form.elements['pondType'].value = pond.pondType || '';
+    form.elements['species'].value = pond.species || '';
+    form.elements['fingerlingCount'].value = pond.fingerlingCount || '';
+    document.querySelector('[data-page="aquaculture"]')?.click();
+    form.dataset.editId = id;
+    form.removeEventListener('submit', form._submitHandler);
+    form._submitHandler = async (event) => {
+      event.preventDefault();
+      try {
+        await request(`/farmer/ponds/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+        showToast('Pond updated.', 'success');
+        delete form.dataset.editId;
+        form.reset();
+        await loadDashboard();
+        await loadPonds();
+      } catch (error) {
+        showToast(error.message || 'Update failed', 'error');
+      }
+    };
+    form.addEventListener('submit', form._submitHandler);
+    return;
+  }
+};
 
 document.addEventListener('click', (event) => {
   if (!notificationPanel || notificationPanel.hidden) return;
