@@ -68,10 +68,10 @@
             <div class="stat-number" id="pondCount">0</div>
             <div class="stat-change">Water systems monitored</div>
           </div>
-          <div class="card card-interactive" tabindex="0" data-page-link="expert">
+          <div class="card card-interactive" tabindex="0" data-page-link="expert" id="supportQueryCard">
             <div class="stat-label">Support Queries</div>
             <div class="stat-number" id="alertCount">0</div>
-            <div class="stat-change down">Pending expert review</div>
+            <div class="stat-change down" id="supportQueryStatus">Pending expert review</div>
           </div>
         </div>
         <div class="grid-2" style="margin-top:18px;">
@@ -310,6 +310,14 @@
                 name="details" required></textarea></label><button class="btn-primary" type="submit">Request expert
               review</button>
           </form>
+        </div>
+        <div class="card">
+          <div class="card-title">Your support history</div>
+          <div class="form-row" style="margin-bottom:16px; gap:12px; flex-wrap:wrap; display:flex; align-items:center;">
+            <label style="margin:0; display:flex; align-items:center; gap:8px;"><input type="checkbox" id="unansweredFilter" /> Show only unanswered</label>
+            <button class="btn-secondary" id="refreshSupportHistory" type="button">Refresh history</button>
+          </div>
+          <div id="supportHistory">Loading support history...</div>
         </div>
       </section>
     </main>

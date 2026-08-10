@@ -62,6 +62,7 @@ const renderDashboard = (data) => {
   const crops = Array.isArray(data?.crops) ? data.crops : [];
   const livestock = Array.isArray(data?.livestock) ? data.livestock : [];
   const ponds = Array.isArray(data?.ponds) ? data.ponds : [];
+  const pendingSupportQueries = Number(data?.pendingSupportQueries || 0);
   const cropSummary = crops.length
     ? crops.map((crop) => `${crop.cropType || 'Crop'}${crop.variety ? ` (${crop.variety})` : ''}`).join(', ')
     : 'No crop records yet';
@@ -72,8 +73,19 @@ const renderDashboard = (data) => {
   setText('cropCount', cropSummary);
   setText('livestockCount', `${livestock.length || 0} animal records tracked`);
   setText('pondCount', `${ponds.length || 0} ponds active`);
-  setText('alertCount', `${data?.pendingSupportQueries || 0} pending support queries`);
+  setText('alertCount', pendingSupportQueries);
   setText('pondCountAquaculture', ponds.length || 0);
+
+  const supportQueryCard = document.getElementById('supportQueryCard');
+  const supportQueryStatus = document.getElementById('supportQueryStatus');
+  if (supportQueryCard && supportQueryStatus) {
+    if (pendingSupportQueries > 0) {
+      supportQueryCard.style.display = '';
+      supportQueryStatus.textContent = 'Pending expert review';
+    } else {
+      supportQueryCard.style.display = 'none';
+    }
+  }
 };
 
 const queueOperation = (operation) => {
@@ -96,27 +108,54 @@ const syncOfflineOperations = async () => {
   }
 };
 
-const renderNotifications = (alerts) => {
-  const items = Array.isArray(alerts) ? alerts : [];
+const renderNotifications = (data) => {
+  const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+  const supportUpdates = Array.isArray(data?.supportUpdates) ? data.supportUpdates : [];
+  const items = [
+    ...alerts.map((alert) => ({ type: 'alert', ...alert })),
+    ...supportUpdates.map((update) => ({ type: 'support', ...update }))
+  ];
+
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((alert, index) => `
-        <div class="notification-item" data-index="${index}">
-          <div class="notification-title">${escapeHtml(alert.title || 'Alert')}</div>
-          <div class="notification-meta">${escapeHtml(alert.region || 'Regional')} • ${escapeHtml(new Date(alert.createdAt || Date.now()).toLocaleString())}</div>
-          <div class="notification-meta">${escapeHtml(alert.message || '')}</div>
+      ? items.map((item, index) => `
+        <div class="notification-item" data-index="${index}" data-type="${item.type}">
+          <div class="notification-title">${escapeHtml(item.type === 'support' ? item.subject : item.title || 'Alert')}</div>
+          <div class="notification-meta">${escapeHtml(item.type === 'support' ? 'Expert response available' : item.region || 'Regional')} • ${escapeHtml(new Date(item.createdAt || Date.now()).toLocaleString())}</div>
+          <div class="notification-meta">${escapeHtml(item.type === 'support' ? item.response || 'Your support query has an update.' : item.message || '')}</div>
         </div>`).join('')
-      : '<div class="notification-empty">No alerts yet.</div>';
+      : '<div class="notification-empty">No notifications yet.</div>';
   }
 };
 
 const loadNotifications = async () => {
   try {
-    const alerts = await request('/farmer/alerts');
-    renderNotifications(alerts);
+    const data = await request('/farmer/notifications');
+    renderNotifications(data);
   } catch (_error) {
-    renderNotifications([]);
+    renderNotifications({ alerts: [], supportUpdates: [] });
+  }
+};
+
+const loadSupportHistory = async (onlyUnanswered = false) => {
+  const history = document.getElementById('supportHistory');
+  if (!history) return;
+  try {
+    const queries = await request('/farmer/support/queries');
+    const entries = Array.isArray(queries) ? queries : [];
+    const filtered = onlyUnanswered ? entries.filter((query) => !query.response) : entries;
+    history.innerHTML = filtered.length
+      ? filtered.map((query) => `
+          <div class="support-history-item">
+            <div><strong>${escapeHtml(query.subject)}</strong> <span class="status-tag ${query.status === 'pending' ? 'yellow' : query.status === 'resolved' ? 'green' : 'blue'}">${escapeHtml(query.status)}</span></div>
+            <div>${escapeHtml(query.category)} • ${escapeHtml(new Date(query.createdAt || Date.now()).toLocaleString())}</div>
+            <p>${escapeHtml(query.details)}</p>
+            ${query.response ? `<div class="support-response"><strong>Expert response:</strong><p>${escapeHtml(query.response)}</p></div>` : '<div class="support-response"><em>No response yet.</em></div>'}
+          </div>`).join('')
+      : '<div>No support queries found yet.</div>';
+  } catch (error) {
+    history.innerHTML = `<div>${escapeHtml(error.message || 'Unable to load support history.')}</div>`;
   }
 };
 
@@ -141,9 +180,18 @@ if (notificationPanel) {
 }
 
 if (notificationBell) {
-  notificationBell.addEventListener('click', () => {
+  notificationBell.addEventListener('click', async () => {
     if (!notificationPanel) return;
+    const shouldShow = notificationPanel.hidden;
     notificationPanel.hidden = !notificationPanel.hidden;
+    if (shouldShow) {
+      try {
+        await request('/farmer/notifications/read', { method: 'POST' });
+        await loadNotifications();
+      } catch (_error) {
+        // keep current notification panel state if marking read fails
+      }
+    }
   });
 }
 
@@ -301,10 +349,24 @@ const bindFormActions = () => {
   });
 
   const supportForm = document.getElementById('supportForm');
-  if (supportForm) supportForm.addEventListener('submit', (event) => {
+  if (supportForm) supportForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    submitJson('/farmer/support', Object.fromEntries(new FormData(event.currentTarget)));
+    await submitJson('/farmer/support', Object.fromEntries(new FormData(event.currentTarget)));
+    await loadSupportHistory(document.getElementById('unansweredFilter')?.checked);
   });
+
+  const unansweredFilter = document.getElementById('unansweredFilter');
+  const refreshSupportHistory = document.getElementById('refreshSupportHistory');
+  if (unansweredFilter) {
+    unansweredFilter.addEventListener('change', () => {
+      loadSupportHistory(unansweredFilter.checked);
+    });
+  }
+  if (refreshSupportHistory) {
+    refreshSupportHistory.addEventListener('click', () => {
+      loadSupportHistory(unansweredFilter?.checked);
+    });
+  }
 
   const communityPostForm = document.getElementById('communityPostForm');
   if (communityPostForm) communityPostForm.addEventListener('submit', async (event) => {
@@ -394,6 +456,7 @@ bindCameraActions();
 bindFormActions();
 loadDashboard();
 loadNotifications();
+loadSupportHistory();
 loadCommunityPosts();
 syncOfflineOperations();
 
