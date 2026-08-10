@@ -260,6 +260,26 @@ const bindAdminInteractions = () => {
     });
   }
 
+  const purgeDeletedBtn = document.getElementById('purgeDeletedBtn');
+  if (purgeDeletedBtn) {
+    purgeDeletedBtn.addEventListener('click', async () => {
+      const input = document.getElementById('purgeDaysInput');
+      const days = Number(input?.value) || 30;
+      const confirmed = await (window.showConfirmModal ? window.showConfirmModal(`Purge soft-deleted records older than ${days} days? This permanently deletes data.`) : Promise.resolve(confirm('Purge soft-deleted records?')));
+      if (!confirmed) return;
+      purgeDeletedBtn.disabled = true;
+      try {
+        const result = await request('/admin/cleanup-deleted', { method: 'POST', body: JSON.stringify({ days }) });
+        showToast(result.message || 'Purge completed.', 'success');
+        await loadSummary();
+      } catch (error) {
+        showToast(error.message || 'Purge failed', 'error');
+      } finally {
+        purgeDeletedBtn.disabled = false;
+      }
+    });
+  }
+
   const supportTable = document.getElementById('supportQueryTable');
   if (supportTable) {
     supportTable.addEventListener('click', async (event) => {

@@ -362,6 +362,39 @@ exports.listCommunityPosts = async (req, res) => {
   }
 };
 
+// List soft-deleted items belonging to the farmer (crops, livestock, ponds)
+exports.listDeletedItems = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const crops = await Crop.find({ userId, deleted: true }).sort({ deletedAt: -1 });
+    const livestock = await Livestock.find({ userId, deleted: true }).sort({ deletedAt: -1 });
+    const ponds = await Pond.find({ userId, deleted: true }).sort({ deletedAt: -1 });
+    res.json({ crops, livestock, ponds });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to list deleted items', error: error.message });
+  }
+};
+
+// Restore a soft-deleted item for the farmer
+exports.restoreDeletedItem = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const userId = req.user._id;
+    let Model;
+    if (type === 'crop') Model = Crop;
+    else if (type === 'livestock') Model = Livestock;
+    else if (type === 'pond') Model = Pond;
+    else return res.status(400).json({ message: 'Invalid type' });
+
+    const item = await Model.findOneAndUpdate({ _id: id, userId, deleted: true }, { $set: { deleted: false, deletedAt: null } }, { new: true });
+    if (!item) return res.status(404).json({ message: 'Item not found or not deleted' });
+    try { const Audit = require('../models/AuditLog'); await Audit.create({ action: 'restore', userId, targetType: Model.modelName, targetId: item._id }); } catch (_) {}
+    res.json({ message: 'Item restored', item });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to restore item', error: error.message });
+  }
+};
+
 exports.createCommunityPost = async (req, res) => {
   try {
     const { title, content, category, region } = req.body;

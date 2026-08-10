@@ -767,6 +767,7 @@ const bindNavigation = () => {
     pages.forEach((page) => page.classList.toggle('active', page.id === `page-${pageName}`));
     if (sidebar) sidebar.classList.remove('open');
     if (pageName === 'dashboard') startPondPolling(); else stopPondPolling();
+    if (pageName === 'trash') loadTrash();
   };
   let pondPollingId = null;
   const startPondPolling = () => {
@@ -968,6 +969,65 @@ const handleEditRecord = async (id) => {
     return;
   }
 };
+
+// Load deleted items (Trash) and render restore buttons
+const renderDeletedList = (data) => {
+  const container = document.getElementById('trashContent');
+  if (!container) return;
+  const crops = Array.isArray(data?.crops) ? data.crops : [];
+  const livestock = Array.isArray(data?.livestock) ? data.livestock : [];
+  const ponds = Array.isArray(data?.ponds) ? data.ponds : [];
+  const makeRow = (item, type) => `
+    <div class="deleted-row">
+      <div class="deleted-meta"><strong>${escapeHtml(item.name || item.cropType || item.category || item.pondName || 'Record')}</strong>
+        <div class="small-text">${escapeHtml(type)} • Deleted ${escapeHtml(formatAge(item.deletedAt))}</div>
+      </div>
+      <div class="deleted-actions"><button class="btn-secondary btn-restore" data-type="${escapeHtml(type.toLowerCase())}" data-id="${escapeHtml(item._id)}">Restore</button></div>
+    </div>`;
+
+  container.innerHTML = `
+    <div class="deleted-section"><h3>Crops</h3>${crops.length ? crops.map((c) => makeRow(c, 'Crop')).join('') : '<p class="message">No deleted crops.</p>'}</div>
+    <div class="deleted-section"><h3>Livestock</h3>${livestock.length ? livestock.map((l) => makeRow(l, 'Livestock')).join('') : '<p class="message">No deleted livestock.</p>'}</div>
+    <div class="deleted-section"><h3>Ponds</h3>${ponds.length ? ponds.map((p) => makeRow(p, 'Pond')).join('') : '<p class="message">No deleted ponds.</p>'}</div>`;
+};
+
+const loadTrash = async () => {
+  try {
+    const data = await request('/farmer/deleted');
+    renderDeletedList(data);
+  } catch (error) {
+    const container = document.getElementById('trashContent');
+    if (container) container.innerHTML = `<p class="message">${escapeHtml(error.message || 'Unable to load deleted items.')}</p>`;
+  }
+};
+
+// Restore a deleted item
+const restoreDeleted = async (type, id, button) => {
+  if (!type || !id) return;
+  const confirmed = await showConfirmModal('Restore this item?');
+  if (!confirmed) return;
+  if (button) button.disabled = true;
+  try {
+    await request(`/farmer/restore/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, { method: 'POST' });
+    showToast('Item restored.', 'success');
+    await loadDashboard();
+    await loadPonds();
+    await loadTrash();
+  } catch (error) {
+    showToast(error.message || 'Restore failed', 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+};
+
+// delegate restore button clicks
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('.btn-restore');
+  if (!btn) return;
+  const type = btn.dataset.type;
+  const id = btn.dataset.id;
+  restoreDeleted(type, id, btn);
+});
 
 document.addEventListener('click', (event) => {
   if (!notificationPanel || notificationPanel.hidden) return;

@@ -58,6 +58,9 @@ router.get('/support/queries', listFarmerSupportQueries);
 router.get('/notifications', getFarmerNotifications);
 router.post('/notifications/read', markFarmerNotificationsRead);
 router.post('/diagnose', diagnosisValidator, diagnoseLeaf);
+// Farmer maintenance: view and restore own deleted items
+router.get('/deleted', require('../controllers/farmerDashboardController').listDeletedItems);
+router.post('/restore/:type/:id', require('../controllers/farmerDashboardController').restoreDeletedItem);
 router.post('/sync', enqueueOfflineSync);
 router.get('/sync', listOfflineSync);
 router.post('/sync/resolve', resolveOfflineSync);

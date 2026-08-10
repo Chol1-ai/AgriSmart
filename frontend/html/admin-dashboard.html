@@ -171,7 +171,11 @@
                         <div class="sub">View current platform database health and document counts.</div>
                     </div>
                     <div class="actions">
-                        <button class="btn-secondary" id="refreshDatabaseButton" type="button"><i class="fas fa-sync-alt"></i> Refresh</button>
+                                                <button class="btn-secondary" id="refreshDatabaseButton" type="button"><i class="fas fa-sync-alt"></i> Refresh</button>
+                                                <label style="display:inline-flex;align-items:center;gap:8px;margin-left:12px;">
+                                                    <input id="purgeDaysInput" type="number" min="1" value="30" style="width:80px;padding:6px;border-radius:4px;border:1px solid #ddd;" />
+                                                    <button class="btn-danger" id="purgeDeletedBtn" type="button">Purge deleted</button>
+                                                </label>
                     </div>
                 </header>
                 <div class="card">
