@@ -53,22 +53,22 @@
           <div class="notification-panel" id="notificationPanel" hidden></div>
         </header>
         <div class="grid-4">
-          <div class="card">
+          <div class="card card-interactive" tabindex="0" data-page-link="crops">
             <div class="stat-label">Active Crops</div>
             <div class="stat-number" id="cropCount">0</div>
             <div class="stat-change up">Live from your records</div>
           </div>
-          <div class="card">
+          <div class="card card-interactive" tabindex="0" data-page-link="livestock">
             <div class="stat-label">Total Livestock</div>
             <div class="stat-number" id="livestockCount">0</div>
             <div class="stat-change">Animals and birds tracked</div>
           </div>
-          <div class="card">
+          <div class="card card-interactive" tabindex="0" data-page-link="aquaculture">
             <div class="stat-label">Active Ponds</div>
             <div class="stat-number" id="pondCount">0</div>
             <div class="stat-change">Water systems monitored</div>
           </div>
-          <div class="card">
+          <div class="card card-interactive" tabindex="0" data-page-link="expert">
             <div class="stat-label">Support Queries</div>
             <div class="stat-number" id="alertCount">0</div>
             <div class="stat-change down">Pending expert review</div>
@@ -135,6 +135,7 @@
               <button class="btn-primary" type="submit"><i class="fas fa-microscope"></i> Analyze image</button>
             </form>
             <input id="leafImageInput" type="file" accept="image/*" capture="environment" hidden />
+            <div id="aiErrorBanner" role="alert" aria-live="polite" hidden style="display:none;padding:8px;border-radius:4px;margin-top:8px;background:#fff4f4;color:#9b1c1c;border:1px solid #f5c2c7;font-size:0.95rem;"></div>
             <p class="message" id="diagnosisResult" role="status"></p>
           </div>
           <div class="card">
@@ -313,6 +314,7 @@
       </section>
     </main>
   </div>
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="../js/config/api.js"></script>
   <script src="../js/dashboards/farmer-dashboard.js"></script>
   <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>

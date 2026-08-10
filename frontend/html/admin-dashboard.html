@@ -17,7 +17,8 @@
             <div class="nav-label">Administration</div><button class="nav-item active" data-page="overview"><i
                     class="fas fa-chart-pie"></i> System Overview</button><button class="nav-item" data-page="users"><i
                     class="fas fa-users-cog"></i> User Management</button><button class="nav-item" data-page="alerts"><i
-                    class="fas fa-bullhorn"></i> Content & Alerts</button>
+                    class="fas fa-bullhorn"></i> Content & Alerts</button><button class="nav-item" data-page="database"><i
+                    class="fas fa-database"></i> Database</button>
             <div class="user-badge">
                 <div class="avatar" id="userAvatar">AD</div>
                 <div>
@@ -44,17 +45,17 @@
                     <div class="notification-panel" id="notificationPanel" hidden></div>
                 </header>
                 <div class="grid-3">
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="users">
                         <div class="stat-label">Users</div>
                         <div class="stat-number" id="userCount">0</div>
                         <div class="stat-change">Registered accounts</div>
                     </div>
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="alerts">
                         <div class="stat-label">Alerts</div>
                         <div class="stat-number" id="alertCount">0</div>
                         <div class="stat-change">Published advisories</div>
                     </div>
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="database">
                         <div class="stat-label">Database</div>
                         <div class="stat-number" id="databaseStatus">Checking</div>
                         <div class="stat-change up">Atlas service status</div>
@@ -69,23 +70,50 @@
                         <div class="sub">Oversee platform accounts and access roles.</div>
                     </div>
                 </header>
-                <div class="card">
-                    <div class="card-title">Registered users</div>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                </tr>
-                            </thead>
-                            <tbody id="userTable">
-                                <tr>
-                                    <td colspan="3">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">Registered users</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTable">
+                                    <tr>
+                                        <td colspan="4">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Add a new user</div>
+                        <form id="adminUserForm">
+                            <div class="form-grid">
+                                <label>Name<input name="name" required /></label>
+                                <label>Email<input name="email" type="email" required /></label>
+                            </div>
+                            <div class="form-grid">
+                                <label>Password<input name="password" type="password" required /></label>
+                                <label>Role<select name="role" required>
+                                        <option value="farmer">Farmer</option>
+                                        <option value="expert">Expert</option>
+                                        <option value="admin">Admin</option>
+                                    </select></label>
+                            </div>
+                            <div class="form-grid">
+                                <label>Phone<input name="phone" /></label>
+                                <label>Location<input name="location" /></label>
+                            </div>
+                            <label>Farm name<input name="farmName" /></label>
+                            <button class="btn-primary" type="submit">Create user</button>
+                        </form>
+                        <p class="message" id="createUserMessage" role="status"></p>
                     </div>
                 </div>
             </section>
@@ -103,8 +131,34 @@
                             class="btn-primary" type="submit">Create alert</button></form>
                 </div>
             </section>
+            <section class="page" id="page-database">
+                <header class="page-header">
+                    <div>
+                        <h1>Database Status</h1>
+                        <div class="sub">View current platform database health and document counts.</div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-secondary" id="refreshDatabaseButton" type="button"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                </header>
+                <div class="card">
+                    <div class="card-title">Database details</div>
+                    <div class="grid-2">
+                        <div>
+                            <div class="stat-label">Service status</div>
+                            <div class="stat-number" id="databaseStatusDetail">Checking</div>
+                        </div>
+                        <div>
+                            <div class="stat-label">User records</div>
+                            <div class="stat-number" id="databaseUserCount">0</div>
+                        </div>
+                    </div>
+                    <p class="message" id="databaseMessage" role="status"></p>
+                </div>
+            </section>
         </main>
     </div>
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <script src="../js/config/api.js"></script>
     <script src="../js/dashboards/admin-dashboard.js"></script>
     <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>

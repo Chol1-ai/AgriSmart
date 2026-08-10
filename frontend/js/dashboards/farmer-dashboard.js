@@ -29,6 +29,28 @@ const setText = (id, value) => {
   if (element) element.textContent = value;
 };
 
+const setStatusMessage = (id, value, type = 'info') => {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.textContent = value;
+  element.classList.remove('success', 'error', 'info');
+  element.classList.add(type);
+};
+
+const toastContainer = document.getElementById('toastContainer');
+const showToast = (message, type = 'info') => {
+  if (!toastContainer) return;
+  const toast = document.createElement('section');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✔️' : type === 'error' ? '⚠️' : 'ℹ️'}</span><div class="toast-body"><span class="toast-title">${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info'}</span><span class="toast-text"></span></div><button class="close-toast" aria-label="Dismiss notification">×</button>`;
+  toast.querySelector('.toast-text').textContent = message;
+  toast.querySelector('.close-toast').addEventListener('click', () => {
+    toast.remove();
+  });
+  toastContainer.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 5000);
+};
+
 const escapeHtml = (value) => String(value || '')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -58,7 +80,7 @@ const queueOperation = (operation) => {
   const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
   pending.push({ ...operation, id: crypto.randomUUID(), timestamp: new Date().toISOString() });
   localStorage.setItem(pendingKey, JSON.stringify(pending));
-  setText('actionMessage', 'Saved offline. It will sync when connectivity returns.');
+  setStatusMessage('actionMessage', 'Saved offline. It will sync when connectivity returns.', 'info');
 };
 
 const syncOfflineOperations = async () => {
@@ -68,9 +90,9 @@ const syncOfflineOperations = async () => {
     await request('/farmer/sync', { method: 'POST', body: JSON.stringify({ operations: pending }) });
     await request('/farmer/sync/resolve', { method: 'POST' });
     localStorage.removeItem(pendingKey);
-    setText('actionMessage', 'Offline records synchronized.');
+    setStatusMessage('actionMessage', 'Offline records synchronized.', 'success');
   } catch (_error) {
-    setText('actionMessage', 'Sync will retry when the connection is available.');
+    setStatusMessage('actionMessage', 'Sync will retry when the connection is available.', 'error');
   }
 };
 
@@ -130,7 +152,7 @@ const loadDashboard = async () => {
     const response = await request('/farmer/dashboard');
     renderDashboard(response);
   } catch (error) {
-    setText('actionMessage', error.message || 'Unable to load dashboard data.');
+    setStatusMessage('actionMessage', error.message || 'Unable to load dashboard data.', 'error');
   }
 };
 
@@ -141,10 +163,12 @@ const submitJson = async (path, payload) => {
   }
   try {
     await request(path, { method: 'POST', body: JSON.stringify(payload) });
-    setText('actionMessage', 'Record saved successfully.');
+    setStatusMessage('actionMessage', 'Record saved successfully.', 'success');
+    showToast('Record saved successfully.', 'success');
     await loadDashboard();
   } catch (error) {
-    setText('actionMessage', error.message);
+    setStatusMessage('actionMessage', error.message, 'error');
+    showToast(error.message, 'error');
   }
 };
 
@@ -163,6 +187,8 @@ const loadCommunityPosts = async () => {
     }).join('') : '<p class="message">No community posts yet. Be the first to share an update.</p>';
   } catch (error) {
     list.innerHTML = `<p class="message">${escapeHtml(error.message || 'Unable to load community posts.')}</p>`;
+    setStatusMessage('communityMessage', error.message || 'Unable to load community posts.', 'error');
+    showToast(error.message || 'Unable to load community posts.', 'error');
   }
 };
 
@@ -221,10 +247,35 @@ const bindFormActions = () => {
 
     try {
       const result = await request('/farmer/diagnose', { method: 'POST', body: JSON.stringify(payload) });
+      const aiError = result?.aiError;
+      const banner = document.getElementById('aiErrorBanner');
+      if (aiError && banner) {
+        // show banner with dismiss button
+        banner.innerHTML = `<span>AI service notice: ${aiError.message || JSON.stringify(aiError)} — using local fallback.</span><button id="dismissAiError" style="margin-left:12px;background:transparent;border:none;color:#9b1c1c;font-weight:bold;cursor:pointer">Dismiss</button>`;
+        banner.hidden = false;
+        banner.style.display = 'block';
+        const dismissed = localStorage.getItem('agrismart.dismissAiError');
+        if (dismissed === 'true') {
+          banner.hidden = true; banner.style.display = 'none';
+        } else {
+          const btn = document.getElementById('dismissAiError');
+          if (btn) btn.addEventListener('click', () => {
+            banner.hidden = true; banner.style.display = 'none';
+            localStorage.setItem('agrismart.dismissAiError', 'true');
+          });
+        }
+      } else if (banner) {
+        banner.hidden = true;
+        banner.style.display = 'none';
+        localStorage.removeItem('agrismart.dismissAiError');
+      }
+
       if (!result.isAuthenticImage) {
-        setText('diagnosisResult', `${result.diseaseName}: ${result.description}`);
+        let msg = `${result.diseaseName}: ${result.description}`;
+        setText('diagnosisResult', msg);
       } else {
-        setText('diagnosisResult', `${result.classification || diagnosisCategory.toLowerCase()} diagnosis: ${result.diseaseName} (${result.severity}). ${result.description} ${result.treatment}`);
+        let msg = `${result.classification || diagnosisCategory.toLowerCase()} diagnosis: ${result.diseaseName} (${result.severity}). ${result.description} ${result.treatment}`;
+        setText('diagnosisResult', msg);
       }
     } catch (error) {
       setText('diagnosisResult', error.message);
@@ -258,17 +309,19 @@ const bindFormActions = () => {
   const communityPostForm = document.getElementById('communityPostForm');
   if (communityPostForm) communityPostForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const message = document.getElementById('communityMessage');
+    const messageId = 'communityMessage';
     try {
       await request('/farmer/community', {
         method: 'POST',
         body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget)))
       });
       event.currentTarget.reset();
-      message.textContent = 'Post published to the community feed.';
+      setStatusMessage(messageId, 'Post published to the community feed.', 'success');
+      showToast('Community post published.', 'success');
       await loadCommunityPosts();
     } catch (error) {
-      message.textContent = error.message;
+      setStatusMessage(messageId, error.message, 'error');
+      showToast(error.message, 'error');
     }
   });
 
@@ -303,7 +356,15 @@ const bindNavigation = () => {
     if (sidebar) sidebar.classList.remove('open');
   };
   navItems.forEach((item) => item.addEventListener('click', () => showPage(item.dataset.page)));
-  document.querySelectorAll('[data-page-link]').forEach((item) => item.addEventListener('click', () => showPage(item.dataset.pageLink)));
+  document.querySelectorAll('[data-page-link]').forEach((item) => {
+    item.addEventListener('click', () => showPage(item.dataset.pageLink));
+    item.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showPage(item.dataset.pageLink);
+      }
+    });
+  });
   if (localStorage.getItem('agrismart.sidebarCollapsed') === 'true' && sidebar) {
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');

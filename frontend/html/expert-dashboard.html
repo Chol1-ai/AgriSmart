@@ -38,17 +38,17 @@
                                 class="fas fa-bullhorn"></i> Broadcast alert</button></div>
                 </header>
                 <div class="grid-3">
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="queries">
                         <div class="stat-label">Pending Queries</div>
                         <div class="stat-number" id="pendingCount">0</div>
                         <div class="stat-change">Awaiting review</div>
                     </div>
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="alerts">
                         <div class="stat-label">Advisories</div>
                         <div class="stat-number">Regional</div>
                         <div class="stat-change">Pest, weather, and water alerts</div>
                     </div>
-                    <div class="card">
+                    <div class="card card-interactive" tabindex="0" data-page-link="overview">
                         <div class="stat-label">Service</div>
                         <div class="stat-number" style="color:#2e7d32">Ready</div>
                         <div class="stat-change up">Extension support online</div>
@@ -87,6 +87,7 @@
             </section>
         </main>
     </div>
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
     <script src="../js/config/api.js"></script>
     <script src="../js/dashboards/expert-dashboard.js"></script>
     <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>
