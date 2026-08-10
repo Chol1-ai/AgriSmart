@@ -11,6 +11,7 @@ const {
   createPond,
   createFinanceRecord,
   submitSupportQuery,
+  listFarmerSupportQueries,
   diagnoseLeaf,
   enqueueOfflineSync,
   resolveOfflineSync,
@@ -37,6 +38,9 @@ router.post('/livestock', createLivestockValidator, createLivestock);
 router.post('/ponds', createPondValidator, createPond);
 router.post('/finance', createFinanceValidator, createFinanceRecord);
 router.post('/support', supportQueryValidator, submitSupportQuery);
+router.get('/support/queries', listFarmerSupportQueries);
+router.get('/notifications', getFarmerNotifications);
+router.post('/notifications/read', markFarmerNotificationsRead);
 router.post('/diagnose', diagnosisValidator, diagnoseLeaf);
 router.post('/sync', enqueueOfflineSync);
 router.get('/sync', listOfflineSync);
