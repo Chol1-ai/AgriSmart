@@ -18,4 +18,7 @@ module.exports = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   GEMINI_API_URL: process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com'
+  ,GEMINI_FALLBACK_PROVIDER: process.env.GEMINI_FALLBACK_PROVIDER || ''
+  ,OPENAI_API_KEY: process.env.OPENAI_API_KEY || ''
+  ,OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini'
 };

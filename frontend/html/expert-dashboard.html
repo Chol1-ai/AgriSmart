@@ -34,8 +34,14 @@
                         <h1>Expert Advisory Panel</h1>
                         <div class="sub">Review complex crop, livestock, and pond issues.</div>
                     </div>
-                    <div class="actions"><button class="btn-primary" data-page-link="alerts"><i
-                                class="fas fa-bullhorn"></i> Broadcast alert</button></div>
+                    <div class="actions">
+                        <button class="notification-bell" id="notificationBell" type="button" aria-label="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notificationBadge">0</span>
+                        </button>
+                        <button class="btn-primary" data-page-link="alerts"><i class="fas fa-bullhorn"></i> Broadcast alert</button>
+                    </div>
+                    <div class="notification-panel" id="notificationPanel" hidden></div>
                 </header>
                 <div class="grid-3">
                     <div class="card card-interactive" tabindex="0" data-page-link="queries">

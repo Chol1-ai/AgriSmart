@@ -204,15 +204,15 @@ const loadDashboard = async () => {
   }
 };
 
-const submitJson = async (path, payload) => {
+const submitJson = async (path, payload, successMessage = 'Record saved successfully.') => {
   if (!navigator.onLine) {
     queueOperation({ type: path, payload });
     return;
   }
   try {
     await request(path, { method: 'POST', body: JSON.stringify(payload) });
-    setStatusMessage('actionMessage', 'Record saved successfully.', 'success');
-    showToast('Record saved successfully.', 'success');
+    setStatusMessage('actionMessage', successMessage, 'success');
+    showToast(successMessage, 'success');
     await loadDashboard();
   } catch (error) {
     setStatusMessage('actionMessage', error.message, 'error');
@@ -351,8 +351,10 @@ const bindFormActions = () => {
   const supportForm = document.getElementById('supportForm');
   if (supportForm) supportForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    await submitJson('/farmer/support', Object.fromEntries(new FormData(event.currentTarget)));
+    await submitJson('/farmer/support', Object.fromEntries(new FormData(event.currentTarget)), 'Support request sent to admin for review.');
     await loadSupportHistory(document.getElementById('unansweredFilter')?.checked);
+    const supportPage = document.querySelector('[data-page="expert"]');
+    if (supportPage) supportPage.click();
   });
 
   const unansweredFilter = document.getElementById('unansweredFilter');

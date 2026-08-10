@@ -98,68 +98,142 @@ const queryGeminiDiagnosis = async ({ category, subject, imageData }) => {
   const { apiKey, model, apiUrl } = getGeminiConfig();
   if (!apiKey) return null;
 
-  const ai = createGeminiClient({ apiKey, apiUrl });
   const imagePart = buildInlineImagePart(imageData);
-  console.log('[Gemini] Sending diagnosis request', {
-    category,
-    subject,
-    imageLength: String(imageData || '').length,
-    hasImagePart: Boolean(imagePart),
-    model,
-    apiUrl
-  });
+  // Build a list of candidate model names to try. Some accounts require the full
+  // resource-style name (models/...) or the image-specialized variant.
+  const candidates = [];
+  const base = String(model || '').trim();
+  if (base) candidates.push(base);
+  if (base && !base.startsWith('models/')) candidates.push(`models/${base}`);
+  if (base && !base.endsWith('-image')) candidates.push(`${base}-image`);
+  if (base && !base.startsWith('models/') && !base.endsWith('-image')) candidates.push(`models/${base}-image`);
+  // Older fallbacks
+  candidates.push('gemini-1.5', 'gemini-1.0');
+  const candidateModels = Array.from(new Set(candidates));
 
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: buildPrompt({ category, subject, imageData }) },
-            ...(imagePart ? [imagePart] : [])
-          ]
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+  for (const candidateModel of candidateModels) {
+    // allow up to 2 attempts per model in case of transient quota/retryable errors
+    for (let attempt = 0; attempt < 2; attempt++) {
+      console.log('[Gemini] Attempting diagnosis with model', candidateModel, 'attempt', attempt + 1);
+      const ai = createGeminiClient({ apiKey, apiUrl });
+      console.log('[Gemini] Sending diagnosis request', {
+        category,
+        subject,
+        imageLength: String(imageData || '').length,
+        hasImagePart: Boolean(imagePart),
+        model: candidateModel,
+        apiUrl
+      });
+
+      try {
+        const response = await ai.models.generateContent({
+          model: candidateModel,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: buildPrompt({ category, subject, imageData }) },
+                ...(imagePart ? [imagePart] : [])
+              ]
+            }
+          ],
+          config: {
+            temperature: 0.2,
+            maxOutputTokens: 400
+          }
+        });
+
+        const payload = response?.data ?? response;
+        const output = typeof payload === 'string'
+          ? payload.trim()
+          : extractTextFromResponse(payload).trim();
+
+        const fallbackText = typeof response?.text === 'string'
+          ? response.text.trim()
+          : '';
+
+        const rawOutput = output || fallbackText;
+        console.log('[Gemini] Response received', {
+          textPreview: rawOutput.slice(0, 300),
+          hasText: Boolean(rawOutput),
+          payloadKeys: response ? Object.keys(response) : [],
+          model: candidateModel
+        });
+
+        if (!rawOutput) {
+          console.error('[Gemini] No usable output returned from response', { response, model: candidateModel });
+          break; // try next model
         }
-      ],
-      config: {
-        temperature: 0.2,
-        maxOutputTokens: 400
+
+        const jsonText = rawOutput.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');
+        try {
+          return JSON.parse(jsonText);
+        } catch (error) {
+          console.error('Gemini parse error:', error.message, jsonText);
+          break; // try next model
+        }
+      } catch (error) {
+        // Normalize error info
+        let msg = '';
+        let code = null;
+        let status = null;
+        let retryDelayMs = 2000;
+
+        try {
+          if (typeof error === 'string') {
+            msg = error;
+            const parsed = JSON.parse(error);
+            code = parsed?.error?.code || null;
+            status = parsed?.error?.status || null;
+          } else if (error && typeof error === 'object') {
+            msg = error.message || JSON.stringify(error);
+            code = error?.error?.code || error?.code || null;
+            status = error?.error?.status || error?.status || null;
+            // extract retry info if present
+            const match = msg && msg.match(/retryDelay\"?:\"?(\d+(?:\.\d+)?)(s)?/i);
+            if (match) {
+              const secs = Number(match[1]) || 2;
+              retryDelayMs = Math.round(secs * 1000);
+            }
+          }
+        } catch (parseErr) {
+          msg = error?.message || String(error);
+        }
+
+        console.error('Gemini diagnosis error:', msg);
+
+        // If quota / resource exhausted, retry once after delay
+        if (/RESOURCE_EXHAUSTED|quota exceeded|429|RESOURCE_EXHAUSTED/i.test(msg) || status === 'RESOURCE_EXHAUSTED') {
+          if (attempt === 0) {
+            console.log(`[Gemini] Resource exhausted; retrying after ${retryDelayMs}ms`);
+            await sleep(retryDelayMs);
+            continue; // retry same model
+          }
+          // exhausted after retry, return structured error for caller
+          const fallback = process.env.GEMINI_FALLBACK_PROVIDER || require('../config/environment').GEMINI_FALLBACK_PROVIDER || null;
+          const errObj = { error: { code, status: status || 'RESOURCE_EXHAUSTED', message: msg } };
+          if (fallback) errObj.suggestedFallback = { provider: fallback, note: 'Configure and implement fallback provider integration.' };
+          return errObj;
+        }
+
+        // If model not found, try next candidate model
+        if (/no longer available|NOT_FOUND|not found|is not found/i.test(msg)) {
+          console.log('[Gemini] Model unavailable, trying next candidate model');
+          break; // try next model
+        }
+
+        // For other errors, surface structured error (include suggested fallback if configured)
+        const fallback = process.env.GEMINI_FALLBACK_PROVIDER || require('../config/environment').GEMINI_FALLBACK_PROVIDER || null;
+        const errObj = { error: { code, status, message: msg } };
+        if (fallback) errObj.suggestedFallback = { provider: fallback, note: 'Configure and implement fallback provider integration.' };
+        return errObj;
       }
-    });
-
-    const payload = response?.data ?? response;
-    const output = typeof payload === 'string'
-      ? payload.trim()
-      : extractTextFromResponse(payload).trim();
-
-    const fallbackText = typeof response?.text === 'string'
-      ? response.text.trim()
-      : '';
-
-    const rawOutput = output || fallbackText;
-    console.log('[Gemini] Response received', {
-      textPreview: rawOutput.slice(0, 300),
-      hasText: Boolean(rawOutput),
-      payloadKeys: response ? Object.keys(response) : [],
-      model
-    });
-
-    if (!rawOutput) {
-      console.error('[Gemini] No usable output returned from response', { response });
-      return null;
     }
-
-    const jsonText = rawOutput.replace(/^[\s\S]*?({[\s\S]*})[\s\S]*$/m, '$1');
-    try {
-      return JSON.parse(jsonText);
-    } catch (error) {
-      console.error('Gemini parse error:', error.message, jsonText);
-      return null;
-    }
-  } catch (error) {
-    console.error('Gemini diagnosis error:', error?.message || error);
-    return null;
   }
+
+  return { error: { message: 'No models returned a usable response' } };
 };
 
 module.exports = { queryGeminiDiagnosis, createGeminiClient };

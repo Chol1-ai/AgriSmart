@@ -42,27 +42,32 @@ const showPage = (name) => {
   document.getElementById('sidebar').classList.remove('open');
 };
 
-const renderNotifications = (alerts) => {
-  const items = Array.isArray(alerts) ? alerts : [];
+const renderNotifications = (data) => {
+  const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+  const supportQueries = Array.isArray(data?.supportQueries) ? data.supportQueries : [];
+  const items = [
+    ...supportQueries.map((query) => ({ type: 'support', ...query })),
+    ...alerts.map((alert) => ({ type: 'alert', ...alert }))
+  ];
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((alert, index) => `
-        <div class="notification-item" data-index="${index}">
-          <div class="notification-title">${alert.title || 'Alert'}</div>
-          <div class="notification-meta">${alert.region || 'Regional'} • ${new Date(alert.createdAt || Date.now()).toLocaleString()}</div>
-          <div class="notification-meta">${alert.message || ''}</div>
+      ? items.map((item, index) => `
+        <div class="notification-item" data-index="${index}" data-type="${item.type}">
+          <div class="notification-title">${item.type === 'support' ? item.subject : item.title || 'Alert'}</div>
+          <div class="notification-meta">${item.type === 'support' ? item.userId?.name || 'Farmer request' : item.region || 'Regional'} • ${new Date(item.createdAt || Date.now()).toLocaleString()}</div>
+          <div class="notification-meta">${item.type === 'support' ? 'Pending expert response' : item.message || ''}</div>
         </div>`).join('')
-      : '<div class="notification-empty">No alerts yet.</div>';
+      : '<div class="notification-empty">No notifications yet.</div>';
   }
 };
 
 const loadNotifications = async () => {
   try {
-    const alerts = await request('/admin/alerts');
-    renderNotifications(alerts);
+    const data = await request('/admin/notifications');
+    renderNotifications(data);
   } catch (_error) {
-    renderNotifications([]);
+    renderNotifications({ alerts: [], supportQueries: [] });
   }
 };
 
@@ -85,21 +90,65 @@ const loadUsers = async () => {
   }
 };
 
+const loadSupportQueries = async () => {
+  const table = document.getElementById('supportQueryTable');
+  if (!table) return;
+  try {
+    const queries = await request('/admin/support');
+    const entries = Array.isArray(queries) ? queries : [];
+    table.innerHTML = entries.length
+      ? entries.map((query) => `
+        <tr>
+          <td>${query.userId?.name || 'Farmer'}</td>
+          <td>${query.subject}</td>
+          <td>${query.category}</td>
+          <td><span class="status-tag yellow">${query.status}</span></td>
+          <td><button class="btn-primary" data-review-query="${query._id}">Answer</button></td>
+        </tr>`).join('')
+      : '<tr><td colspan="5">No pending support requests.</td></tr>';
+  } catch (error) {
+    table.innerHTML = `<tr><td colspan="5">${error.message || 'Unable to load support requests.'}</td></tr>`;
+  }
+};
+
+const loadSupportPreview = async () => {
+  const preview = document.getElementById('supportPreviewList');
+  if (!preview) return;
+  try {
+    const queries = await request('/admin/support');
+    const entries = Array.isArray(queries) ? queries : [];
+    preview.innerHTML = entries.length
+      ? entries.slice(0, 3).map((query) => `
+          <div class="small-card">
+            <div><strong>${query.subject}</strong> <span class="status-tag yellow">${query.status}</span></div>
+            <div>${query.userId?.name || 'Farmer'} · ${query.category}</div>
+            <button class="btn-secondary" data-preview-review="${query._id}">Answer</button>
+          </div>`).join('')
+      : '<div>No pending support queries.</div>';
+  } catch (error) {
+    preview.innerHTML = `<div>${error.message || 'Unable to load support preview.'}</div>`;
+  }
+};
+
 const loadSummary = async () => {
   try {
     setAdminMessage('Loading dashboard data...', 'info');
     const summary = await request('/admin/summary');
     const userCountEl = document.getElementById('userCount');
+    const supportCountEl = document.getElementById('supportCount');
     const alertCountEl = document.getElementById('alertCount');
     const statusEl = document.getElementById('databaseStatus');
     const statusDetailEl = document.getElementById('databaseStatusDetail');
     const userCountDetailEl = document.getElementById('databaseUserCount');
     if (userCountEl) userCountEl.textContent = summary.userCount;
+    if (supportCountEl) supportCountEl.textContent = summary.supportCount;
     if (alertCountEl) alertCountEl.textContent = summary.alertCount;
     if (statusEl) statusEl.textContent = summary.serviceStatus;
     if (statusDetailEl) statusDetailEl.textContent = summary.serviceStatus;
     if (userCountDetailEl) userCountDetailEl.textContent = summary.userCount;
     await loadUsers();
+    await loadSupportQueries();
+    await loadSupportPreview();
     setAdminMessage('Dashboard metrics updated.', 'success');
   } catch (error) {
     setAdminMessage(error.message || 'Unable to load admin summary.', 'error');
@@ -194,6 +243,50 @@ const bindAdminInteractions = () => {
       }
     });
   }
+
+  const supportTable = document.getElementById('supportQueryTable');
+  if (supportTable) {
+    supportTable.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-review-query]');
+      if (!button) return;
+      const id = button.dataset.reviewQuery;
+      const response = window.prompt('Enter your advice or response for this query:');
+      if (!response) return;
+      button.disabled = true;
+      try {
+        await request(`/admin/support/${id}/review`, { method: 'POST', body: JSON.stringify({ response, status: 'reviewed' }) });
+        showToast('Support query answered.', 'success');
+        await loadSummary();
+        await loadNotifications();
+      } catch (error) {
+        showToast(error.message || 'Unable to answer query.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  const supportPreview = document.getElementById('supportPreviewList');
+  if (supportPreview) {
+    supportPreview.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-preview-review]');
+      if (!button) return;
+      const id = button.dataset.previewReview;
+      const response = window.prompt('Enter your advice or response for this query:');
+      if (!response) return;
+      button.disabled = true;
+      try {
+        await request(`/admin/support/${id}/review`, { method: 'POST', body: JSON.stringify({ response, status: 'reviewed' }) });
+        showToast('Support query answered.', 'success');
+        await loadSummary();
+        await loadNotifications();
+      } catch (error) {
+        showToast(error.message || 'Unable to answer query.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
 };
 
 document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => showPage(item.dataset.page)));
@@ -276,11 +369,22 @@ if (notificationPanel) {
   });
 }
 
+const markNotificationsRead = async () => {
+  try {
+    await request('/admin/notifications/read', { method: 'POST' });
+  } catch (_error) {
+    // ignore failures for marking notifications read
+  }
+};
+
 if (notificationBell) {
-  notificationBell.addEventListener('click', () => {
-    if (notificationPanel) {
-      const isHidden = notificationPanel.hasAttribute('hidden');
-      notificationPanel.toggleAttribute('hidden', !isHidden);
+  notificationBell.addEventListener('click', async () => {
+    if (!notificationPanel) return;
+    const isHidden = notificationPanel.hasAttribute('hidden');
+    notificationPanel.toggleAttribute('hidden', !isHidden);
+    if (isHidden) {
+      await markNotificationsRead();
+      await loadNotifications();
     }
   });
 }

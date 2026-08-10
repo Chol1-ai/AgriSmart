@@ -4,6 +4,9 @@ const apiHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'applicat
 if (!token) window.location.href = 'index.html';
 
 const expertMessage = document.getElementById('expertMessage');
+const notificationBell = document.getElementById('notificationBell');
+const notificationBadge = document.getElementById('notificationBadge');
+const notificationPanel = document.getElementById('notificationPanel');
 const toastContainer = document.getElementById('toastContainer');
 const setExpertMessage = (value, type = 'info') => {
   if (!expertMessage) return;
@@ -46,6 +49,39 @@ const showPage = (name) => {
   document.getElementById('sidebar').classList.remove('open');
 };
 
+const renderNotifications = (data) => {
+  const supportQueries = Array.isArray(data?.supportQueries) ? data.supportQueries : [];
+  const items = supportQueries.map((query) => ({ type: 'support', ...query }));
+  if (notificationBadge) notificationBadge.textContent = items.length;
+  if (notificationPanel) {
+    notificationPanel.innerHTML = items.length
+      ? items.map((item, index) => `
+        <div class="notification-item" data-index="${index}">
+          <div class="notification-title">${item.subject || 'Farmer request'}</div>
+          <div class="notification-meta">${item.userId?.name || 'Farmer'} • ${new Date(item.createdAt || Date.now()).toLocaleString()}</div>
+          <div class="notification-meta">${item.details || ''}</div>
+        </div>`).join('')
+      : '<div class="notification-empty">No notifications yet.</div>';
+  }
+};
+
+const loadNotifications = async () => {
+  try {
+    const data = await request('/expert/notifications');
+    renderNotifications(data);
+  } catch (_error) {
+    renderNotifications({ supportQueries: [] });
+  }
+};
+
+const markNotificationsRead = async () => {
+  try {
+    await request('/expert/notifications/read', { method: 'POST' });
+  } catch (_error) {
+    // ignore read failures
+  }
+};
+
 const loadQueries = async () => {
   try {
     setExpertMessage('Loading farmer queries...', 'info');
@@ -63,6 +99,7 @@ const loadQueries = async () => {
           setExpertMessage('Query reviewed successfully.', 'success');
           showToast('Query reviewed successfully.', 'success');
           await loadQueries();
+          await loadNotifications();
         } catch (reviewError) {
           setExpertMessage(reviewError.message || 'Unable to mark query reviewed.', 'error');
           showToast(reviewError.message || 'Unable to mark query reviewed.', 'error');
@@ -132,7 +169,30 @@ if (alertForm) {
     }
   });
 }
+
+if (notificationBell) {
+  notificationBell.addEventListener('click', async () => {
+    if (!notificationPanel) return;
+    const isHidden = notificationPanel.hasAttribute('hidden');
+    notificationPanel.toggleAttribute('hidden', !isHidden);
+    if (isHidden) {
+      await markNotificationsRead();
+      await loadNotifications();
+    }
+  });
+}
+
+if (notificationPanel) {
+  notificationPanel.addEventListener('click', () => {
+    const items = notificationPanel.querySelectorAll('.notification-item').length;
+    if (items === 0) return;
+    notificationPanel.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+    if (notificationBadge) notificationBadge.textContent = '0';
+  });
+}
+
 loadQueries();
+loadNotifications();
 initializeUserInfo();
 
 const handleLogout = () => {

@@ -16,7 +16,8 @@
             <div class="brand"><span style="width:44px;height:44px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:transparent;padding:0;"><img src="../assets/images/AgriSmart.jpeg" alt="AgriSmart logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" /></span><span>AgriSmart</span></div>
             <div class="nav-label">Administration</div><button class="nav-item active" data-page="overview"><i
                     class="fas fa-chart-pie"></i> System Overview</button><button class="nav-item" data-page="users"><i
-                    class="fas fa-users-cog"></i> User Management</button><button class="nav-item" data-page="alerts"><i
+                    class="fas fa-users-cog"></i> User Management</button><button class="nav-item" data-page="support"><i
+                    class="fas fa-headset"></i> Support Requests</button><button class="nav-item" data-page="alerts"><i
                     class="fas fa-bullhorn"></i> Content & Alerts</button><button class="nav-item" data-page="database"><i
                     class="fas fa-database"></i> Database</button>
             <div class="user-badge">
@@ -44,11 +45,16 @@
                     </div>
                     <div class="notification-panel" id="notificationPanel" hidden></div>
                 </header>
-                <div class="grid-3">
+                <div class="grid-4">
                     <div class="card card-interactive" tabindex="0" data-page-link="users">
                         <div class="stat-label">Users</div>
                         <div class="stat-number" id="userCount">0</div>
                         <div class="stat-change">Registered accounts</div>
+                    </div>
+                    <div class="card card-interactive" tabindex="0" data-page-link="support">
+                        <div class="stat-label">Support</div>
+                        <div class="stat-number" id="supportCount">0</div>
+                        <div class="stat-change">Awaiting response</div>
                     </div>
                     <div class="card card-interactive" tabindex="0" data-page-link="alerts">
                         <div class="stat-label">Alerts</div>
@@ -60,6 +66,10 @@
                         <div class="stat-number" id="databaseStatus">Checking</div>
                         <div class="stat-change up">Atlas service status</div>
                     </div>
+                </div>
+                <div class="card" id="supportOverviewCard">
+                    <div class="card-title">Pending support queries</div>
+                    <div id="supportPreviewList">Loading support queries...</div>
                 </div>
                 <p class="message" id="adminMessage" role="status"></p>
             </section>
@@ -117,6 +127,32 @@
                     </div>
                 </div>
             </section>
+            <section class="page" id="page-support">
+                <header class="page-header">
+                    <div>
+                        <h1>Support Requests</h1>
+                        <div class="sub">Review farmer advisory requests and provide responses.</div>
+                    </div>
+                </header>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Farmer</th>
+                                    <th>Subject</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supportQueryTable">
+                                <tr><td colspan="5">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
             <section class="page" id="page-alerts">
                 <header class="page-header">
                     <div>
@@ -125,10 +161,7 @@
                     </div>
                 </header>
                 <div class="card">
-                    <form id="adminAlertForm"><label>Alert title<input name="title"
-                                required /></label><label>Message<textarea name="message"
-                                required></textarea></label><label>Region<input name="region" /></label><button
-                            class="btn-primary" type="submit">Create alert</button></form>
+                    <form id="adminAlertForm"><label>Alert title<input name="title" required /></label><label>Message<textarea name="message" required></textarea></label><label>Region<input name="region" /></label><button class="btn-primary" type="submit">Create alert</button></form>
                 </div>
             </section>
             <section class="page" id="page-database">

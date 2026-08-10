@@ -12,6 +12,8 @@ const {
   createFinanceRecord,
   submitSupportQuery,
   listFarmerSupportQueries,
+  getFarmerNotifications,
+  markFarmerNotificationsRead,
   diagnoseLeaf,
   enqueueOfflineSync,
   resolveOfflineSync,

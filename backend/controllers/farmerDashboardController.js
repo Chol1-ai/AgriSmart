@@ -40,6 +40,33 @@ exports.listAlerts = async (_req, res) => {
   }
 };
 
+exports.getFarmerNotifications = async (req, res) => {
+  try {
+    const alerts = await Alert.find().sort({ createdAt: -1 }).limit(10);
+    const supportUpdates = await SupportQuery.find({
+      userId: req.user._id,
+      status: { $in: ['reviewed', 'resolved'] },
+      viewedByRequester: false
+    }).sort({ createdAt: -1 });
+    res.json({ alerts, supportUpdates });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load notifications', error: error.message });
+  }
+};
+
+exports.markFarmerNotificationsRead = async (req, res) => {
+  try {
+    await SupportQuery.updateMany({
+      userId: req.user._id,
+      status: { $in: ['reviewed', 'resolved'] },
+      viewedByRequester: false
+    }, { viewedByRequester: true });
+    res.json({ message: 'Notifications marked read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to mark notifications read', error: error.message });
+  }
+};
+
 exports.createCrop = async (req, res) => {
   try {
     const { cropType, variety, plantingDate, expectedHarvestDate, expectedYield, treatmentHistory } = req.body;
@@ -127,6 +154,15 @@ exports.submitSupportQuery = async (req, res) => {
     res.status(201).json(query);
   } catch (error) {
     res.status(500).json({ message: 'Support query submission failed', error: error.message });
+  }
+};
+
+exports.listFarmerSupportQueries = async (req, res) => {
+  try {
+    const queries = await SupportQuery.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json(queries);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load support queries', error: error.message });
   }
 };
 

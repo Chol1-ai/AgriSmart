@@ -8,6 +8,8 @@ const supportQuerySchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'reviewed', 'resolved'], default: 'pending' },
   assignedExpert: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   response: { type: String, default: '' },
+  viewedByStaff: { type: Boolean, default: false },
+  viewedByRequester: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
 

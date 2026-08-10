@@ -220,6 +220,70 @@ const analyzeImage = async ({ category, subject, imageData }) => {
     diseaseName: geminiResult?.diseaseName,
     summary: geminiResult?.summary
   });
+  // If Gemini returned null (e.g., no API key or error), use local inference as a graceful fallback
+  if (geminiResult === null) {
+    const { diagnosis, confidence } = inferDiseaseFromImage(category, subject, imageData);
+    return {
+      cropType: subject || category || 'unknown',
+      diseaseName: diagnosis.disease,
+      severity: diagnosis.severity || 'Low',
+      description: `${diagnosis.description} (Fallback inference used because Gemini was unavailable or returned no result.)`,
+      treatment: diagnosis.treatment,
+      recommendations: [
+        'Monitor the subject over the next few days.',
+        'Capture a second photo in better lighting if symptoms are unclear.',
+        'Verify the Gemini API key in your environment to enable AI diagnosis.'
+      ],
+      isAuthenticImage: true,
+      confidence: Math.round(confidence * 100),
+      summary: 'Gemini unavailable; returning local inference as a fallback.'
+    };
+  }
+
+  // If Gemini returned a structured error, try configured fallback provider
+  if (geminiResult && geminiResult.error) {
+    console.error('[Diagnosis] Gemini error payload', geminiResult.error);
+    const fallbackProvider = process.env.GEMINI_FALLBACK_PROVIDER || require('../config/environment').GEMINI_FALLBACK_PROVIDER || '';
+    if (fallbackProvider) {
+      const { tryFallback } = require('./fallbackProvider');
+      const fallbackResult = await tryFallback({ provider: fallbackProvider, category, subject, imageData });
+      if (fallbackResult && !fallbackResult.error) {
+        return {
+          cropType: subject || category || 'unknown',
+          diseaseName: fallbackResult.diseaseName,
+          severity: fallbackResult.severity || 'Low',
+          description: `${fallbackResult.description} (Fallback provider: ${fallbackProvider})`,
+          treatment: fallbackResult.treatment,
+          recommendations: fallbackResult.recommendations || [],
+          isAuthenticImage: Boolean(fallbackResult.isAuthenticImage),
+          confidence: Number(fallbackResult.confidence || 0),
+          summary: fallbackResult.summary || `Fallback provider ${fallbackProvider} returned a result.`,
+          aiError: geminiResult.error
+        };
+      }
+      // If fallback fails, fall through to local inference below
+    }
+
+    const { diagnosis, confidence } = inferDiseaseFromImage(category, subject, imageData);
+    const errMsg = geminiResult.error.message || 'Unknown Gemini error';
+    return {
+      cropType: subject || category || 'unknown',
+      diseaseName: diagnosis.disease,
+      severity: diagnosis.severity || 'Low',
+      description: `${diagnosis.description} (Gemini error: ${errMsg}). Using local fallback inference.`,
+      treatment: diagnosis.treatment,
+      recommendations: [
+        'Monitor the subject over the next few days.',
+        'Capture a second photo in better lighting if symptoms are unclear.',
+        'Check the Gemini API key, project quotas, and billing to enable AI diagnosis.'
+      ],
+      isAuthenticImage: true,
+      confidence: Math.round(confidence * 100),
+      summary: `Gemini error: ${errMsg}`,
+      aiError: geminiResult.error
+    };
+  }
+
   if (geminiResult && typeof geminiResult.isAuthenticImage === 'boolean') {
     return {
       cropType: subject || category || 'unknown',
