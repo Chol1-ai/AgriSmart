@@ -22,6 +22,28 @@ const createPondValidator = (req, res, next) => {
   next();
 };
 
+const createWaterQualityValidator = (req, res, next) => {
+  const { pH, temperature, dissolvedOxygen, TAN, turbidity } = req.body;
+  if (pH == null || temperature == null || dissolvedOxygen == null || TAN == null || turbidity == null) {
+    return res.status(400).json({ message: 'All water quality readings are required' });
+  }
+  if (isNaN(Number(pH)) || isNaN(Number(temperature)) || isNaN(Number(dissolvedOxygen)) || isNaN(Number(TAN)) || isNaN(Number(turbidity))) {
+    return res.status(400).json({ message: 'Water quality values must be numeric' });
+  }
+  next();
+};
+
+const createFeedRecordValidator = (req, res, next) => {
+  const { feedType, amountKg } = req.body;
+  if (!feedType || amountKg == null) {
+    return res.status(400).json({ message: 'Feed type and amount are required' });
+  }
+  if (isNaN(Number(amountKg))) {
+    return res.status(400).json({ message: 'Feed amount must be numeric' });
+  }
+  next();
+};
+
 const createFinanceValidator = (req, res, next) => {
   const { enterpriseType, description, amount, category } = req.body;
   if (!enterpriseType || !description || amount == null || !category) {
@@ -68,6 +90,8 @@ module.exports = {
   createCropValidator,
   createLivestockValidator,
   createPondValidator,
+  createWaterQualityValidator,
+  createFeedRecordValidator,
   createFinanceValidator,
   supportQueryValidator,
   diagnosisValidator,

@@ -55,7 +55,11 @@ const renderNotifications = (data) => {
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((item, index) => `
+      ? `
+        <div class="notification-panel-header">
+          <span>${items.length} notification${items.length === 1 ? '' : 's'}</span>
+          <button class="notification-clear" type="button">Clear all</button>
+        </div>` + items.map((item, index) => `
         <div class="notification-item" data-index="${index}">
           <div class="notification-title">${item.subject || 'Farmer request'}</div>
           <div class="notification-meta">${item.userId?.name || 'Farmer'} • ${new Date(item.createdAt || Date.now()).toLocaleString()}</div>
@@ -82,6 +86,13 @@ const markNotificationsRead = async () => {
   }
 };
 
+const clearNotifications = async () => {
+  await markNotificationsRead();
+  if (!notificationPanel) return;
+  notificationPanel.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+  if (notificationBadge) notificationBadge.textContent = '0';
+};
+
 const loadQueries = async () => {
   try {
     setExpertMessage('Loading farmer queries...', 'info');
@@ -91,22 +102,34 @@ const loadQueries = async () => {
     const entries = Array.isArray(queries) ? queries : [];
     if (countElement) countElement.textContent = entries.length;
     if (list) {
-      list.innerHTML = entries.length ? entries.map((query) => `<article class="card" style="margin-bottom:16px"><div class="card-title">${escapeHtml(query.subject)}<span class="status-tag yellow">Pending</span></div><p>${escapeHtml(query.details)}</p><button class="btn-primary" data-query-id="${escapeHtml(query._id)}">Mark reviewed</button></article>`).join('') : '<div class="card">No pending farmer queries.</div>';
-      list.querySelectorAll('[data-query-id]').forEach((button) => button.addEventListener('click', async () => {
-        button.disabled = true;
-        try {
-          await request(`/expert/queries/${button.dataset.queryId}/review`, { method: 'POST', body: JSON.stringify({ response: 'Reviewed by extension worker', status: 'reviewed' }) });
-          setExpertMessage('Query reviewed successfully.', 'success');
-          showToast('Query reviewed successfully.', 'success');
-          await loadQueries();
-          await loadNotifications();
-        } catch (reviewError) {
-          setExpertMessage(reviewError.message || 'Unable to mark query reviewed.', 'error');
-          showToast(reviewError.message || 'Unable to mark query reviewed.', 'error');
-        } finally {
-          button.disabled = false;
-        }
-      }));
+      list.innerHTML = entries.length ? entries.map((query) => `<article class="card" style="margin-bottom:16px"><div class="card-title">${escapeHtml(query.subject)}<span class="status-tag yellow">Pending</span></div><p>${escapeHtml(query.details)}</p><form class="review-form" data-query-id="${escapeHtml(query._id)}"><div class="form-grid"><label>Expert name<input name="expertName" value="${escapeHtml(user.name || '')}" required /></label><label>Location<input name="expertLocation" placeholder="Region or district" required /></label></div><label>Feedback<textarea name="response" rows="4" required placeholder="Enter advice to the farmer"></textarea></label><button class="btn-primary" type="submit">Submit response</button></form></article>`).join('') : '<div class="card">No pending farmer queries.</div>';
+      list.querySelectorAll('.review-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const submitButton = form.querySelector('button[type="submit"]');
+          if (submitButton) submitButton.disabled = true;
+          const queryId = form.dataset.queryId;
+          const formData = new FormData(form);
+          const payload = {
+            expertName: formData.get('expertName')?.toString().trim() || '',
+            expertLocation: formData.get('expertLocation')?.toString().trim() || '',
+            response: formData.get('response')?.toString().trim() || '',
+            status: 'reviewed'
+          };
+          try {
+            await request(`/expert/queries/${queryId}/review`, { method: 'POST', body: JSON.stringify(payload) });
+            setExpertMessage('Query reviewed successfully.', 'success');
+            showToast('Query reviewed successfully.', 'success');
+            await loadQueries();
+            await loadNotifications();
+          } catch (reviewError) {
+            setExpertMessage(reviewError.message || 'Unable to submit expert feedback.', 'error');
+            showToast(reviewError.message || 'Unable to submit expert feedback.', 'error');
+          } finally {
+            if (submitButton) submitButton.disabled = false;
+          }
+        });
+      });
     }
     if (!entries.length) setExpertMessage('No pending queries at the moment.', 'info');
   } catch (error) {
@@ -183,11 +206,11 @@ if (notificationBell) {
 }
 
 if (notificationPanel) {
-  notificationPanel.addEventListener('click', () => {
-    const items = notificationPanel.querySelectorAll('.notification-item').length;
-    if (items === 0) return;
-    notificationPanel.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
-    if (notificationBadge) notificationBadge.textContent = '0';
+  notificationPanel.addEventListener('click', (event) => {
+    const clearButton = event.target.closest('.notification-clear');
+    if (clearButton) {
+      clearNotifications();
+    }
   });
 }
 

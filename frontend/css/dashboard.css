@@ -99,6 +99,10 @@ body.sidebar-collapsed .main { margin-left: 72px; max-width: calc(100% - 72px); 
 .status-tag { border-radius: 999px; display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 10px; white-space: nowrap; }
 .status-tag.green { background: #e6f5e6; color: var(--green); } .status-tag.yellow { background: #fef9e6; color: var(--warning); } .status-tag.red { background: #fde6e6; color: var(--danger); } .status-tag.blue { background: #e6edf5; color: #1e4a7a; }
 .table-wrap { overflow-x: auto; } table { border-collapse: collapse; font-size: 14px; width: 100%; } th { background: linear-gradient(90deg, rgba(31,181,107,.12), rgba(26,143,177,.12)); color: var(--forest); font-size: 11px; padding: 12px 10px; text-align: left; text-transform: uppercase; } td { border-bottom: 1px solid rgba(31, 181, 107, .12); padding: 12px 10px; }
+.inventory-group { margin-bottom: 18px; }
+.inventory-group-title { color: var(--forest); font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+.inventory-table { border-radius: 14px; overflow: hidden; }
+.inventory-table tbody tr:last-child td { border-bottom: 0; }
 .form-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); } label { color: #2d3e2d; display: block; font-size: 13px; font-weight: 700; } input, select, textarea { background: #fafcfa; border: 1px solid #d4e0d4; border-radius: 9px; margin-top: 7px; padding: 11px 12px; width: 100%; } input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46, 125, 50, .12); outline: 0; } textarea { min-height: 90px; resize: vertical; } form .btn-primary, form .btn-secondary { margin-top: 18px; }
 .message { color: var(--muted); min-height: 20px; }
 .message.success { color: #1f6e2d; }

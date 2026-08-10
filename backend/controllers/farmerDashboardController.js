@@ -123,6 +123,62 @@ exports.createPond = async (req, res) => {
   }
 };
 
+exports.listPonds = async (req, res) => {
+  try {
+    const ponds = await Pond.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json(ponds);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load pond list', error: error.message });
+  }
+};
+
+exports.addWaterQualityRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pH, temperature, dissolvedOxygen, TAN, turbidity, notes } = req.body;
+    const record = {
+      date: new Date(),
+      pH: Number(pH),
+      temperature: Number(temperature),
+      dissolvedOxygen: Number(dissolvedOxygen),
+      TAN: Number(TAN),
+      turbidity: Number(turbidity),
+      notes: notes || ''
+    };
+    const pond = await Pond.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { $push: { waterQualityRecords: record } },
+      { new: true }
+    );
+    if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    res.json(pond);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to add water quality record', error: error.message });
+  }
+};
+
+exports.addFeedRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { feedType, amountKg, notes } = req.body;
+    const record = {
+      date: new Date(),
+      feedType: feedType || '',
+      amountKg: Number(amountKg),
+      notes: notes || ''
+    };
+    const pond = await Pond.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { $push: { feedRecords: record } },
+      { new: true }
+    );
+    if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    res.json(pond);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to add feed record', error: error.message });
+  }
+};
+
 exports.createFinanceRecord = async (req, res) => {
   try {
     const { enterpriseType, description, amount, category, expectedRevenue, actualRevenue, notes } = req.body;

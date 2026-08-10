@@ -52,7 +52,11 @@ const renderNotifications = (data) => {
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((item, index) => `
+      ? `
+        <div class="notification-panel-header">
+          <span>${items.length} notification${items.length === 1 ? '' : 's'}</span>
+          <button class="notification-clear" type="button">Clear all</button>
+        </div>` + items.map((item, index) => `
         <div class="notification-item" data-index="${index}" data-type="${item.type}">
           <div class="notification-title">${item.type === 'support' ? item.subject : item.title || 'Alert'}</div>
           <div class="notification-meta">${item.type === 'support' ? item.userId?.name || 'Farmer request' : item.region || 'Regional'} • ${new Date(item.createdAt || Date.now()).toLocaleString()}</div>
@@ -69,6 +73,17 @@ const loadNotifications = async () => {
   } catch (_error) {
     renderNotifications({ alerts: [], supportQueries: [] });
   }
+};
+
+const clearNotifications = async () => {
+  try {
+    await request('/admin/notifications/read', { method: 'POST' });
+  } catch (_error) {
+    // ignore failures when clearing notifications
+  }
+  if (!notificationPanel) return;
+  notificationPanel.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+  if (notificationBadge) notificationBadge.textContent = '0';
 };
 
 const loadUsers = async () => {

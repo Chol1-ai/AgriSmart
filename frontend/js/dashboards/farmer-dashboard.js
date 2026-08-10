@@ -24,6 +24,8 @@ const request = async (path, options = {}) => {
   return data;
 };
 
+let pondsCache = [];
+
 const setText = (id, value) => {
   const element = document.getElementById(id);
   if (element) element.textContent = value;
@@ -67,14 +69,22 @@ const renderDashboard = (data) => {
     ? crops.map((crop) => `${crop.cropType || 'Crop'}${crop.variety ? ` (${crop.variety})` : ''}`).join(', ')
     : 'No crop records yet';
 
+  window.dashboardCrops = crops;
+  window.dashboardLivestock = livestock;
+  window.dashboardPonds = ponds;
+
   setText('welcome', `Welcome, ${user.name || 'farmer'}!`);
   setText('userName', user.name || 'Farmer');
   setText('userAvatar', (user.name || 'U').slice(0, 2).toUpperCase());
   setText('cropCount', cropSummary);
   setText('livestockCount', `${livestock.length || 0} animal records tracked`);
   setText('pondCount', `${ponds.length || 0} ponds active`);
-  setText('alertCount', pendingSupportQueries);
   setText('pondCountAquaculture', ponds.length || 0);
+  setText('pondStockCount', `${ponds.reduce((sum, pond) => sum + Number(pond.fingerlingCount || 0), 0)}`);
+  setText('alertCount', pendingSupportQueries);
+
+  populateInventoryFilters(crops, livestock);
+  applyInventoryFilters(crops, livestock, ponds);
 
   const supportQueryCard = document.getElementById('supportQueryCard');
   const supportQueryStatus = document.getElementById('supportQueryStatus');
@@ -86,6 +96,110 @@ const renderDashboard = (data) => {
       supportQueryCard.style.display = 'none';
     }
   }
+  renderInventory(crops, livestock, ponds);
+};
+
+const formatDate = (value) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+};
+
+const formatAge = (value) => {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return 'N/A';
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 1) return 'Less than a day';
+  if (diffDays === 1) return '1 day';
+  if (diffDays < 30) return `${diffDays} days`;
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths === 1) return '1 month';
+  if (diffMonths < 12) return `${diffMonths} months`;
+  const diffYears = Math.floor(diffMonths / 12);
+  return diffYears === 1 ? '1 year' : `${diffYears} years`;
+};
+
+const renderTable = (headers, rows) => {
+  return `
+    <table class="inventory-table">
+      <thead>
+        <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+        ${rows.length ? rows.map((row) => `
+          <tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="' + headers.length + '">No records available.</td></tr>'}
+      </tbody>
+    </table>`;
+};
+
+const renderInventoryGroup = (containerId, title, headers, rows) => {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = `<div class="inventory-group-title">${escapeHtml(title)}</div>${renderTable(headers, rows)}`;
+};
+
+const getInventoryFilters = () => {
+  const animalCategory = document.getElementById('inventoryAnimalFilter')?.value || '';
+  const cropType = document.getElementById('inventoryCropFilter')?.value || '';
+  return { animalCategory, cropType };
+};
+
+const applyInventoryFilters = (crops, livestock, ponds) => {
+  renderInventory(crops, livestock, ponds, getInventoryFilters());
+};
+
+const populateInventoryFilters = (crops, livestock) => {
+  const animalFilter = document.getElementById('inventoryAnimalFilter');
+  const cropFilter = document.getElementById('inventoryCropFilter');
+  if (animalFilter) {
+    const categories = [...new Set((Array.isArray(livestock) ? livestock : []).map((item) => item.category || '').filter(Boolean))].sort();
+    animalFilter.innerHTML = '<option value="">All animals</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+  }
+  if (cropFilter) {
+    const types = [...new Set((Array.isArray(crops) ? crops : []).map((item) => item.cropType || '').filter(Boolean))].sort();
+    cropFilter.innerHTML = '<option value="">All crops</option>' + types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+  }
+};
+
+const renderInventory = (crops, livestock, ponds, filters = {}) => {
+  const livestockItems = Array.isArray(livestock) ? livestock : [];
+  const filteredLivestock = livestockItems.filter((item) => {
+    if (filters.animalCategory && item.category !== filters.animalCategory) return false;
+    return true;
+  });
+  const goatRows = filteredLivestock.filter((item) => /goat/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
+  const cowRows = filteredLivestock.filter((item) => /cow|cattle/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
+  const pigRows = filteredLivestock.filter((item) => /pig|swine/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
+  const otherRows = filteredLivestock.filter((item) => !/goat|cow|cattle|pig|swine/i.test(item.category || '')).map((item) => [item.category, item.breed || 'Unknown', String(item.count || 0), formatAge(item.createdAt)]);
+
+  renderInventoryGroup('goatInventory', 'Goats', ['Category', 'Breed', 'Count', 'Age'], goatRows);
+  renderInventoryGroup('cowInventory', 'Cattle / Cows', ['Category', 'Breed', 'Count', 'Age'], cowRows);
+  renderInventoryGroup('pigInventory', 'Pigs & Swine', ['Category', 'Breed', 'Count', 'Age'], pigRows);
+  renderInventoryGroup('otherLivestockInventory', 'Other Livestock', ['Category', 'Breed', 'Count', 'Age'], otherRows);
+
+  const cropItems = Array.isArray(crops) ? crops : [];
+  const filteredCrops = cropItems.filter((item) => {
+    if (filters.cropType && item.cropType !== filters.cropType) return false;
+    return true;
+  });
+  const cropRows = filteredCrops.map((item) => [item.cropType || 'Unknown', item.variety || 'N/A', formatDate(item.plantingDate), formatDate(item.expectedHarvestDate), String(item.expectedYield || 0)]);
+  renderInventoryGroup('cropInventory', 'Crop inventory', ['Crop type', 'Variety', 'Planted', 'Harvest due', 'Expected yield'], cropRows);
+
+  const pondItems = Array.isArray(ponds) ? ponds : [];
+  const fishRows = pondItems.map((item) => [item.pondName || 'Unnamed pond', item.species || 'Unknown', String(item.fingerlingCount || 0), item.pondType || 'N/A', formatAge(item.createdAt)]);
+  renderInventoryGroup('fishInventory', 'Pond / Fish inventory', ['Pond name', 'Species', 'Fingerlings', 'Type', 'Registered age'], fishRows);
+
+  const animalCount = filteredLivestock.reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const cropCount = filteredCrops.length;
+  const pondCount = pondItems.length;
+  const animalCountEl = document.getElementById('inventoryAnimalCount');
+  const cropCountEl = document.getElementById('inventoryCropCount');
+  const pondCountEl = document.getElementById('inventoryPondCount');
+  if (animalCountEl) animalCountEl.textContent = String(animalCount);
+  if (cropCountEl) cropCountEl.textContent = String(cropCount);
+  if (pondCountEl) pondCountEl.textContent = String(pondCount);
 };
 
 const queueOperation = (operation) => {
@@ -119,14 +233,30 @@ const renderNotifications = (data) => {
   if (notificationBadge) notificationBadge.textContent = items.length;
   if (notificationPanel) {
     notificationPanel.innerHTML = items.length
-      ? items.map((item, index) => `
+      ? `
+        <div class="notification-panel-header">
+          <span>${items.length} notification${items.length === 1 ? '' : 's'}</span>
+          <button class="notification-clear" type="button">Clear all</button>
+        </div>` + items.map((item, index) => `
         <div class="notification-item" data-index="${index}" data-type="${item.type}">
           <div class="notification-title">${escapeHtml(item.type === 'support' ? item.subject : item.title || 'Alert')}</div>
           <div class="notification-meta">${escapeHtml(item.type === 'support' ? 'Expert response available' : item.region || 'Regional')} • ${escapeHtml(new Date(item.createdAt || Date.now()).toLocaleString())}</div>
           <div class="notification-meta">${escapeHtml(item.type === 'support' ? item.response || 'Your support query has an update.' : item.message || '')}</div>
+          <button class="notification-dismiss" type="button">Dismiss</button>
         </div>`).join('')
       : '<div class="notification-empty">No notifications yet.</div>';
   }
+};
+
+const clearNotifications = async () => {
+  try {
+    await request('/farmer/notifications/read', { method: 'POST' });
+  } catch (_error) {
+    // ignore failures when clearing notifications
+  }
+  if (!notificationPanel) return;
+  notificationPanel.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+  if (notificationBadge) notificationBadge.textContent = '0';
 };
 
 const loadNotifications = async () => {
@@ -137,6 +267,52 @@ const loadNotifications = async () => {
     renderNotifications({ alerts: [], supportUpdates: [] });
   }
 };
+
+const renderPonds = (ponds) => {
+  pondsCache = Array.isArray(ponds) ? ponds : [];
+  const pondList = document.getElementById('pondList');
+  if (pondList) {
+    pondList.innerHTML = pondsCache.length
+      ? pondsCache.map((pond) => `
+          <article class="alert-item">
+            <div><div class="alert-title">${escapeHtml(pond.pondName)}</div><div class="alert-desc">${escapeHtml(pond.species)} • ${escapeHtml(pond.pondType)}</div><p>Fingerlings: ${escapeHtml(String(pond.fingerlingCount || 0))} | Records: WQ ${pond.waterQualityRecords?.length || 0}, Feed ${pond.feedRecords?.length || 0}</p></div>
+          </article>`).join('')
+      : '<p class="message">No pond records yet. Create a pond to begin logging.</p>';
+  }
+};
+
+const populatePondSelection = (ponds) => {
+  const select = document.getElementById('pondSelection');
+  if (!select) return;
+  select.innerHTML = '<option value="">Choose a pond</option>' + (Array.isArray(ponds) ? ponds.map((pond) => `<option value="${escapeHtml(pond._id)}">${escapeHtml(pond.pondName)}</option>`).join('') : '');
+};
+
+const showPondSummary = (pondId) => {
+  const summary = document.getElementById('pondQualitySummary');
+  if (!summary) return;
+  const pond = pondsCache.find((item) => item._id === pondId);
+  if (!pond) {
+    summary.textContent = 'Select a pond to view latest record';
+    return;
+  }
+  const latest = (pond.waterQualityRecords || []).slice(-1)[0];
+  summary.textContent = latest
+    ? `Latest: pH ${latest.pH}, Temp ${latest.temperature}°C, DO ${latest.dissolvedOxygen} mg/L on ${new Date(latest.date).toLocaleDateString()}`
+    : 'No water quality readings logged yet.';
+};
+
+const loadPonds = async () => {
+  try {
+    const ponds = await request('/farmer/ponds');
+    renderPonds(ponds);
+    populatePondSelection(ponds);
+  } catch (error) {
+    const pondList = document.getElementById('pondList');
+    if (pondList) pondList.innerHTML = `<p class="message">${escapeHtml(error.message || 'Unable to load ponds.')}</p>`;
+  }
+};
+
+const getSelectedPondId = () => document.getElementById('pondSelection')?.value || '';
 
 const loadSupportHistory = async (onlyUnanswered = false) => {
   const history = document.getElementById('supportHistory');
@@ -170,8 +346,31 @@ const markNotificationRead = (item) => {
   }
 };
 
+const dismissNotification = async (item) => {
+  const type = item.dataset.type;
+  markNotificationRead(item);
+  if (type === 'support') {
+    try {
+      await request('/farmer/notifications/read', { method: 'POST' });
+    } catch (_error) {
+      // ignore dismiss failures
+    }
+  }
+};
+
 if (notificationPanel) {
   notificationPanel.addEventListener('click', (event) => {
+    const clearButton = event.target.closest('.notification-clear');
+    if (clearButton) {
+      clearNotifications();
+      return;
+    }
+    const dismissButton = event.target.closest('.notification-dismiss');
+    if (dismissButton) {
+      const item = dismissButton.closest('.notification-item');
+      if (item) dismissNotification(item);
+      return;
+    }
     const item = event.target.closest('.notification-item');
     if (item) {
       markNotificationRead(item);
@@ -214,6 +413,7 @@ const submitJson = async (path, payload, successMessage = 'Record saved successf
     setStatusMessage('actionMessage', successMessage, 'success');
     showToast(successMessage, 'success');
     await loadDashboard();
+    await loadPonds();
   } catch (error) {
     setStatusMessage('actionMessage', error.message, 'error');
     showToast(error.message, 'error');
@@ -342,6 +542,35 @@ const bindFormActions = () => {
     submitJson('/farmer/ponds', Object.fromEntries(new FormData(event.currentTarget)));
   });
 
+  const pondSelection = document.getElementById('pondSelection');
+  if (pondSelection) {
+    pondSelection.addEventListener('change', () => showPondSummary(pondSelection.value));
+  }
+
+  const waterQualityForm = document.getElementById('waterQualityForm');
+  if (waterQualityForm) waterQualityForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const pondId = getSelectedPondId();
+    if (!pondId) {
+      setStatusMessage('pondRecordsMessage', 'Please select a pond before adding readings.', 'error');
+      return;
+    }
+    await submitJson(`/farmer/ponds/${pondId}/water-quality`, Object.fromEntries(new FormData(event.currentTarget)), 'Water quality reading added.');
+    showPondSummary(pondId);
+  });
+
+  const feedRecordForm = document.getElementById('feedRecordForm');
+  if (feedRecordForm) feedRecordForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const pondId = getSelectedPondId();
+    if (!pondId) {
+      setStatusMessage('pondRecordsMessage', 'Please select a pond before adding a feed record.', 'error');
+      return;
+    }
+    await submitJson(`/farmer/ponds/${pondId}/feed-record`, Object.fromEntries(new FormData(event.currentTarget)), 'Feed record added.');
+    showPondSummary(pondId);
+  });
+
   const financeForm = document.getElementById('financeForm');
   if (financeForm) financeForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -356,6 +585,23 @@ const bindFormActions = () => {
     const supportPage = document.querySelector('[data-page="expert"]');
     if (supportPage) supportPage.click();
   });
+
+  const animalFilter = document.getElementById('inventoryAnimalFilter');
+  const cropFilter = document.getElementById('inventoryCropFilter');
+  const resetFilter = document.getElementById('inventoryFilterReset');
+  if (animalFilter) {
+    animalFilter.addEventListener('change', () => applyInventoryFilters(window.dashboardCrops || [], window.dashboardLivestock || [], window.dashboardPonds || []));
+  }
+  if (cropFilter) {
+    cropFilter.addEventListener('change', () => applyInventoryFilters(window.dashboardCrops || [], window.dashboardLivestock || [], window.dashboardPonds || []));
+  }
+  if (resetFilter) {
+    resetFilter.addEventListener('click', () => {
+      if (animalFilter) animalFilter.value = '';
+      if (cropFilter) cropFilter.value = '';
+      applyInventoryFilters(window.dashboardCrops || [], window.dashboardLivestock || [], window.dashboardPonds || []);
+    });
+  }
 
   const unansweredFilter = document.getElementById('unansweredFilter');
   const refreshSupportHistory = document.getElementById('refreshSupportHistory');

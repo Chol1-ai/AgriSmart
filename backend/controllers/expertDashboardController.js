@@ -13,10 +13,13 @@ exports.listSupportQueries = async (req, res) => {
 exports.reviewSupportQuery = async (req, res) => {
   try {
     const { id } = req.params;
-    const { response, status = 'reviewed' } = req.body;
-    const query = await SupportQuery.findByIdAndUpdate(id, { response, status, viewedByStaff: true }, { new: true });
+    const { response, status = 'reviewed', expertName = '', expertLocation = '' } = req.body;
+    const query = await SupportQuery.findByIdAndUpdate(
+      id,
+      { response, status, expertName, expertLocation, viewedByStaff: true, viewedByRequester: false },
+      { new: true }
+    );
     if (!query) return res.status(404).json({ message: 'Support query not found' });
-    await SupportQuery.findByIdAndUpdate(id, { viewedByRequester: false });
     res.json(query);
   } catch (error) {
     res.status(500).json({ message: 'Unable to review query', error: error.message });

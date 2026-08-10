@@ -9,6 +9,9 @@ const {
   createCrop,
   createLivestock,
   createPond,
+  listPonds,
+  addWaterQualityRecord,
+  addFeedRecord,
   createFinanceRecord,
   submitSupportQuery,
   listFarmerSupportQueries,
@@ -26,6 +29,8 @@ const {
   createCropValidator,
   createLivestockValidator,
   createPondValidator,
+  createWaterQualityValidator,
+  createFeedRecordValidator,
   createFinanceValidator,
   supportQueryValidator,
   diagnosisValidator,
@@ -34,10 +39,13 @@ const {
 
 router.use(auth, checkRole(ROLE_FARMER, ROLE_EXPERT, ROLE_ADMIN));
 router.get('/dashboard', getFarmerDashboard);
+router.get('/ponds', listPonds);
 router.get('/alerts', listAlerts);
 router.post('/crops', createCropValidator, createCrop);
 router.post('/livestock', createLivestockValidator, createLivestock);
 router.post('/ponds', createPondValidator, createPond);
+router.post('/ponds/:id/water-quality', createWaterQualityValidator, addWaterQualityRecord);
+router.post('/ponds/:id/feed-record', createFeedRecordValidator, addFeedRecord);
 router.post('/finance', createFinanceValidator, createFinanceRecord);
 router.post('/support', supportQueryValidator, submitSupportQuery);
 router.get('/support/queries', listFarmerSupportQueries);

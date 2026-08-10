@@ -18,6 +18,7 @@
       <button class="nav-item active" data-page="dashboard"><i class="fas fa-home"></i> Dashboard</button>
       <button class="nav-item" data-page="crops"><i class="fas fa-seedling"></i> Crop Management</button>
       <button class="nav-item" data-page="livestock"><i class="fas fa-cow"></i> Livestock & Poultry</button>
+      <button class="nav-item" data-page="inventory"><i class="fas fa-archive"></i> Farm Inventory</button>
       <button class="nav-item" data-page="aquaculture"><i class="fas fa-water"></i> Aquaculture / Ponds</button>
       <button class="nav-item" data-page="finance"><i class="fas fa-coins"></i> Financial Ledger</button>
       <div class="nav-label">Collaboration</div>
@@ -186,6 +187,56 @@
         </div>
       </section>
 
+      <section class="page" id="page-inventory">
+        <header class="page-header">
+          <div>
+            <h1>Farm Inventory</h1>
+            <div class="sub">View all animals, crops, and fish in one place</div>
+          </div>
+        </header>
+        <div class="grid-3" style="margin-bottom:18px;">
+          <div class="card">
+            <div class="stat-label">Total animals</div>
+            <div class="stat-number" id="inventoryAnimalCount">0</div>
+            <div class="stat-change">All livestock records</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Total crops</div>
+            <div class="stat-number" id="inventoryCropCount">0</div>
+            <div class="stat-change">Crop varieties tracked</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Total ponds</div>
+            <div class="stat-number" id="inventoryPondCount">0</div>
+            <div class="stat-change">Fish and pond systems</div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-title">Inventory filters</div>
+          <form id="inventoryFilterForm" class="form-grid">
+            <label>Animal category<select id="inventoryAnimalFilter"><option value="">All animals</option></select></label>
+            <label>Crop type<select id="inventoryCropFilter"><option value="">All crops</option></select></label>
+            <label>&nbsp;</label>
+            <button class="btn-secondary" id="inventoryFilterReset" type="button">Reset filters</button>
+          </form>
+        </div>
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-title">Animal Inventory</div>
+          <div id="goatInventory" class="inventory-group"></div>
+          <div id="cowInventory" class="inventory-group"></div>
+          <div id="pigInventory" class="inventory-group"></div>
+          <div id="otherLivestockInventory" class="inventory-group"></div>
+        </div>
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-title">Crop Inventory</div>
+          <div id="cropInventory" class="inventory-group"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fish & Pond Inventory</div>
+          <div id="fishInventory" class="inventory-group"></div>
+        </div>
+      </section>
+
       <section class="page" id="page-aquaculture">
         <header class="page-header">
           <div>
@@ -200,7 +251,7 @@
           </div>
           <div class="card">
             <div class="stat-label">Total Stock</div>
-            <div class="stat-number">0</div>
+            <div class="stat-number" id="pondStockCount">0</div>
             <div class="stat-change">Fingerlings</div>
           </div>
           <div class="card">
@@ -227,6 +278,23 @@
                   required /></label><label>Fingerling count<input name="fingerlingCount" type="number"
                   min="0" /></label></div><button class="btn-primary" type="submit">Save pond</button>
           </form>
+        </div>
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">Manage Pond Readings</div>
+          <div class="form-grid"><label>Select pond<select id="pondSelection"><option value="">Choose a pond</option></select></label><label>Latest water quality<p id="pondQualitySummary" class="small-text">Select a pond to view latest record</p></label></div>
+          <form id="waterQualityForm">
+            <div class="form-grid"><label>pH<input name="pH" type="number" step="0.1" min="0" required /></label><label>Temperature (°C)<input name="temperature" type="number" step="0.1" min="0" required /></label><label>Dissolved Oxygen (mg/L)<input name="dissolvedOxygen" type="number" step="0.1" min="0" required /></label><label>TAN (mg/L)<input name="TAN" type="number" step="0.1" min="0" required /></label><label>Turbidity<input name="turbidity" type="number" step="0.1" min="0" required /></label><label>Notes<input name="notes" /></label></div>
+            <button class="btn-secondary" type="submit">Add water quality reading</button>
+          </form>
+          <form id="feedRecordForm" style="margin-top:16px;">
+            <div class="form-grid"><label>Feed type<input name="feedType" required /></label><label>Amount (kg)<input name="amountKg" type="number" step="0.1" min="0" required /></label><label>Notes<input name="notes" /></label></div>
+            <button class="btn-secondary" type="submit">Add feed record</button>
+          </form>
+          <div id="pondRecordsMessage" class="message" role="status"></div>
+        </div>
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">Pond Inventory</div>
+          <div id="pondList" class="pond-list">No pond records yet. Create a pond to begin logging.</div>
         </div>
       </section>
 

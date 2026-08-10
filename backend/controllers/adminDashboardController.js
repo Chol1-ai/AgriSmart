@@ -43,10 +43,10 @@ exports.listSupportQueries = async (_req, res) => {
 exports.reviewSupportQuery = async (req, res) => {
   try {
     const { id } = req.params;
-    const { response, status = 'reviewed' } = req.body;
+    const { response, status = 'reviewed', expertName = '', expertLocation = '' } = req.body;
     const query = await SupportQuery.findByIdAndUpdate(
       id,
-      { response, status, viewedByStaff: true, viewedByRequester: false },
+      { response, status, expertName, expertLocation, viewedByStaff: true, viewedByRequester: false },
       { new: true }
     );
     if (!query) return res.status(404).json({ message: 'Support query not found' });
