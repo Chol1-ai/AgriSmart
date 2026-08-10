@@ -128,3 +128,12 @@ body.sidebar-collapsed .main { margin-left: 72px; max-width: calc(100% - 72px); 
 body.sidebar-collapsed .hamburger { left: 0; }
 @media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 768px) { .sidebar, .sidebar.collapsed { padding: 80px 16px 24px; transform: translateX(-100%); width: 260px; } .sidebar.open { transform: translateX(0); } .sidebar.collapsed .brand { font-size: 22px; text-align: left; } .sidebar.collapsed .nav-label, .sidebar.collapsed .nav-item { font-size: 11px; } .sidebar.collapsed .nav-item { justify-content: flex-start; padding-left: 14px; padding-right: 14px; } .sidebar.collapsed .nav-item i { font-size: inherit; } .sidebar.collapsed .user-badge { justify-content: flex-start; padding-left: 12px; padding-right: 12px; } .sidebar.collapsed .user-badge > div:not(.avatar) { display: block; } .main, body.sidebar-collapsed .main { margin-left: 0; max-width: 100%; padding: 28px 16px 32px; width: 100%; } .app-shell:has(.sidebar.open) .main { margin-left: 260px; max-width: calc(100% - 260px); width: calc(100% - 260px); } .hamburger, body.sidebar-collapsed .hamburger { left: 0; top: 0; } .grid-2, .grid-3, .grid-4, .form-grid { grid-template-columns: 1fr; } .page-header { align-items: flex-start; flex-direction: column; } }
+
+/* Confirmation modal */
+.modal-overlay { align-items: center; background: rgba(10, 18, 12, 0.45); bottom: 0; display: flex; justify-content: center; left: 0; padding: 24px; position: fixed; right: 0; top: 0; z-index: 9998; }
+.modal-overlay[hidden] { display: none; }
+.modal { background: #ffffff; border-radius: 12px; box-shadow: 0 20px 48px rgba(0,0,0,0.18); max-width: 520px; padding: 18px; width: 100%; }
+.modal-body { padding: 8px 6px; }
+.modal-body h3 { margin: 0 0 8px; font-size: 18px; }
+.modal-body p { margin: 0; color: var(--muted); }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 14px; }

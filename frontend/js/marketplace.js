@@ -45,6 +45,22 @@ function renderPreviews() { $('imagePreview').innerHTML = uploadedImages.map((im
 function readFiles(files) { [...files].forEach((file) => { if (!file.type.startsWith('image/') || file.size > 5*1024*1024) { showNotice(`${file.name} was skipped. Use an image smaller than 5 MB.`, 'error'); return; } const reader = new FileReader(); reader.onload = () => { uploadedImages.push(reader.result); renderPreviews(); }; reader.readAsDataURL(file); }); }
 $('openModalButton').onclick = () => openModal(); $('emptyStateButton').onclick = () => openModal(); $('closeModalButton').onclick = closeModal; $('modalOverlay').onclick = (event) => { if (event.target === $('modalOverlay')) closeModal(); }; $('productCategory').onchange = () => { $('animalFields').hidden = !animalCategories.includes($('productCategory').value); }; $('imageUploadArea').onclick = () => $('imageInput').click(); $('imageInput').onchange = (event) => readFiles(event.target.files); $('imageUploadArea').ondragover = (event) => event.preventDefault(); $('imageUploadArea').ondrop = (event) => { event.preventDefault(); readFiles(event.dataTransfer.files); };
 ['searchInput','categoryFilter','statusFilter','sortFilter'].forEach((id) => $(id).addEventListener(id === 'searchInput' ? 'input' : 'change', renderListings)); $('refreshButton').onclick = () => { renderListings(); showNotice('Listings refreshed.', 'success'); showToast('Listings refreshed.', 'success'); };
-$('imagePreview').onclick = (event) => { const button = event.target.closest('[data-remove]'); if (button) { uploadedImages.splice(Number(button.dataset.remove),1); renderPreviews(); } }; $('listingsGrid').onclick = (event) => { const button=event.target.closest('button'); if (!button) return; const id=Number(button.dataset.edit || button.dataset.delete || button.dataset.view); const item=listings.find((listing) => listing.id === id); if (button.dataset.edit) openModal(item); else if (button.dataset.delete && item && confirm(`Delete “${item.name}”?`)) { listings=listings.filter((listing) => listing.id !== id); save(); renderListings(); showNotice('Listing deleted.', 'success'); } else if (button.dataset.view && item) alert(`${item.name}\n\n${formatPrice(item.price)}\nQuantity: ${item.quantity}\nLocation: ${item.location || 'Not specified'}\n\n${item.description}`); };
+$('imagePreview').onclick = (event) => { const button = event.target.closest('[data-remove]'); if (button) { uploadedImages.splice(Number(button.dataset.remove),1); renderPreviews(); } };
+
+$('listingsGrid').onclick = async (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  const id = Number(button.dataset.edit || button.dataset.delete || button.dataset.view);
+  const item = listings.find((listing) => listing.id === id);
+  if (button.dataset.edit) openModal(item);
+  else if (button.dataset.delete && item) {
+    const confirmed = await (window.showConfirmModal ? window.showConfirmModal(`Delete “${item.name}”?`) : Promise.resolve(confirm(`Delete “${item.name}”?`)));
+    if (!confirmed) return;
+    listings = listings.filter((listing) => listing.id !== id);
+    save();
+    renderListings();
+    showNotice('Listing deleted.', 'success');
+  } else if (button.dataset.view && item) alert(`${item.name}\n\n${formatPrice(item.price)}\nQuantity: ${item.quantity}\nLocation: ${item.location || 'Not specified'}\n\n${item.description}`);
+};
 $('listingForm').onsubmit = (event) => { event.preventDefault(); const existing=listings.find((item) => item.id===editingId); const listing={ id:editingId || Date.now(), name:$('productName').value.trim(), category:$('productCategory').value, price:Number($('productPrice').value), quantity:$('productQuantity').value.trim(), location:$('productLocation').value.trim(), description:$('productDescription').value.trim(), breed:$('animalBreed').value.trim(), age:$('animalAge').value, gender:$('animalGender').value, images:uploadedImages, status:existing?.status || 'active', createdAt:existing?.createdAt || new Date().toISOString() }; listings=existing ? listings.map((item) => item.id===editingId ? listing : item) : [listing,...listings]; save(); renderListings(); closeModal(); showNotice(existing ? 'Listing updated.' : 'Listing published.', 'success'); showToast(existing ? 'Listing updated.' : 'Listing published.', 'success'); };
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); }); renderListings();

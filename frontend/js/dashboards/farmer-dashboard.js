@@ -53,6 +53,33 @@ const showToast = (message, type = 'info') => {
   window.setTimeout(() => toast.remove(), 5000);
 };
 
+// Show a confirmation modal and return a Promise that resolves to true/false
+const showConfirmModal = (message, title = 'Confirm action') => new Promise((resolve) => {
+  const modal = document.getElementById('confirmModal');
+  const msg = document.getElementById('confirmModalMessage');
+  const ttl = document.getElementById('confirmModalTitle');
+  const ok = document.getElementById('confirmOkBtn');
+  const cancel = document.getElementById('confirmCancelBtn');
+  if (!modal || !ok || !cancel || !msg || !ttl) {
+    // fallback to native confirm when modal not available
+    return resolve(confirm(message));
+  }
+  msg.textContent = message;
+  ttl.textContent = title;
+  modal.hidden = false;
+  const cleanup = () => {
+    ok.removeEventListener('click', onOk);
+    cancel.removeEventListener('click', onCancel);
+    modal.hidden = true;
+  };
+  const onOk = () => { cleanup(); resolve(true); };
+  const onCancel = () => { cleanup(); resolve(false); };
+  ok.addEventListener('click', onOk);
+  cancel.addEventListener('click', onCancel);
+});
+// expose shared helper when possible
+if (typeof window !== 'undefined') window.showConfirmModal = showConfirmModal;
+
 const escapeHtml = (value) => String(value || '')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -834,7 +861,8 @@ document.addEventListener('click', async (event) => {
   }
   if (deleteBtn) {
     const id = deleteBtn.dataset.id;
-    if (!confirm('Delete this record? This action cannot be undone.')) return;
+    const confirmed = await showConfirmModal('Delete this record? This action cannot be undone.');
+    if (!confirmed) return;
     try {
       // determine type by finding row's closest inventory group
       const row = deleteBtn.closest('tr');

@@ -380,6 +380,19 @@
     </main>
   </div>
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <!-- Confirmation modal -->
+  <div id="confirmModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal">
+      <div class="modal-body">
+        <h3 id="confirmModalTitle">Confirm action</h3>
+        <p id="confirmModalMessage">Are you sure?</p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="btn-secondary">Cancel</button>
+        <button id="confirmOkBtn" class="btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
   <script src="../js/config/api.js"></script>
   <script src="../js/dashboards/farmer-dashboard.js"></script>
   <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('../pwa/service-worker.js');</script>

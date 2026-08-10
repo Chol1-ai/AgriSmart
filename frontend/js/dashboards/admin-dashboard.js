@@ -229,7 +229,8 @@ const bindAdminInteractions = () => {
       if (!button) return;
       const id = button.dataset.deleteUser;
       if (!id) return;
-      if (!confirm('Delete this user?')) return;
+      const confirmed = await (window.showConfirmModal ? window.showConfirmModal('Delete this user?') : Promise.resolve(confirm('Delete this user?')));
+      if (!confirmed) return;
       button.disabled = true;
       try {
         await request(`/admin/users/${id}`, { method: 'DELETE' });
