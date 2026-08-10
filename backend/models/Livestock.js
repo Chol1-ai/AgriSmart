@@ -19,6 +19,8 @@ const livestockSchema = new mongoose.Schema({
     notes: String
   }],
   createdAt: { type: Date, default: Date.now }
+  ,
+  deleted: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Livestock', livestockSchema);

@@ -12,9 +12,9 @@ const { generateReport } = require('../services/reportService');
 exports.getFarmerDashboard = async (req, res) => {
   try {
     const userId = req.user._id;
-    const crops = await Crop.find({ userId });
-    const livestock = await Livestock.find({ userId });
-    const ponds = await Pond.find({ userId });
+    const crops = await Crop.find({ userId, deleted: { $ne: true } });
+    const livestock = await Livestock.find({ userId, deleted: { $ne: true } });
+    const ponds = await Pond.find({ userId, deleted: { $ne: true } });
     const alerts = await SupportQuery.find({ userId, status: 'pending' });
 
     res.json({
@@ -138,7 +138,7 @@ exports.updateCrop = async (req, res) => {
 exports.deleteCrop = async (req, res) => {
   try {
     const { id } = req.params;
-    const crop = await Crop.findOneAndDelete({ _id: id, userId: req.user._id });
+    const crop = await Crop.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
     if (!crop) return res.status(404).json({ message: 'Crop not found' });
     res.json({ message: 'Crop deleted' });
   } catch (error) {
@@ -161,7 +161,7 @@ exports.updateLivestock = async (req, res) => {
 exports.deleteLivestock = async (req, res) => {
   try {
     const { id } = req.params;
-    const animal = await Livestock.findOneAndDelete({ _id: id, userId: req.user._id });
+    const animal = await Livestock.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
     if (!animal) return res.status(404).json({ message: 'Livestock record not found' });
     res.json({ message: 'Livestock record deleted' });
   } catch (error) {
@@ -184,7 +184,7 @@ exports.updatePond = async (req, res) => {
 exports.deletePond = async (req, res) => {
   try {
     const { id } = req.params;
-    const pond = await Pond.findOneAndDelete({ _id: id, userId: req.user._id });
+    const pond = await Pond.findOneAndUpdate({ _id: id, userId: req.user._id, deleted: { $ne: true } }, { $set: { deleted: true } }, { new: true });
     if (!pond) return res.status(404).json({ message: 'Pond not found' });
     res.json({ message: 'Pond deleted' });
   } catch (error) {
@@ -194,7 +194,7 @@ exports.deletePond = async (req, res) => {
 
 exports.listPonds = async (req, res) => {
   try {
-    const ponds = await Pond.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const ponds = await Pond.find({ userId: req.user._id, deleted: { $ne: true } }).sort({ createdAt: -1 });
     res.json(ponds);
   } catch (error) {
     res.status(500).json({ message: 'Unable to load pond list', error: error.message });

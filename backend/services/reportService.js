@@ -23,9 +23,9 @@ const buildCsv = (rows) => {
 };
 
 const generateReport = async (userId) => {
-  const crops = await Crop.find({ userId });
-  const livestock = await Livestock.find({ userId });
-  const ponds = await Pond.find({ userId });
+  const crops = await Crop.find({ userId, deleted: { $ne: true } });
+  const livestock = await Livestock.find({ userId, deleted: { $ne: true } });
+  const ponds = await Pond.find({ userId, deleted: { $ne: true } });
   const financeRecords = await FinanceRecord.find({ userId });
 
   const cropSummary = { totalCrops: crops.length, expectedYield: crops.reduce((sum, item) => sum + (item.expectedYield || 0), 0) };
