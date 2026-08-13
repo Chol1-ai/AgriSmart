@@ -155,8 +155,9 @@ exports.updateOrderStatus = async (req, res) => {
     if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
     const order = await Order.findById(id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
-    // deliveryAgent or admin can update
-    if (!req.user.roles.includes('admin') && String(order.deliveryAgent || '') !== String(req.user._id)) {
+    // deliveryAgent (by id) or admin can update
+    const agentId = order.deliveryAgent && order.deliveryAgent.id ? String(order.deliveryAgent.id) : null;
+    if (!req.user.roles.includes('admin') && agentId !== String(req.user._id)) {
       return res.status(403).json({ message: 'Not authorized to update status' });
     }
     order.status = status;
@@ -164,6 +165,16 @@ exports.updateOrderStatus = async (req, res) => {
     res.json({ message: 'Order status updated', order });
   } catch (error) {
     res.status(500).json({ message: 'Unable to update status', error: error.message });
+  }
+};
+
+// List orders assigned to the authenticated delivery agent
+exports.listAssignedOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ 'deliveryAgent.id': req.user._id }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load assigned orders', error: error.message });
   }
 };
 

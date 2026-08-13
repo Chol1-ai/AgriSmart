@@ -20,6 +20,10 @@ router.post('/orders/:id/status', auth, require('../controllers/marketplaceContr
 router.get('/orders', auth, listOrdersForUser);
 router.get('/orders/:id', auth, getOrder);
 
+// Delivery agent endpoints
+router.get('/delivery/assigned', auth, require('../controllers/marketplaceController').listAssignedOrders);
+router.post('/orders/:id/status', auth, require('../controllers/marketplaceController').updateOrderStatus);
+
 // Seller-specific
 router.get('/seller/products', auth, require('../controllers/marketplaceController').listSellerProducts);
 router.get('/seller/orders', auth, require('../controllers/marketplaceController').listSellerOrders);
