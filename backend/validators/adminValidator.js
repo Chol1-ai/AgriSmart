@@ -8,7 +8,7 @@ const createAlertValidator = (req, res, next) => {
 
 const createUserValidator = (req, res, next) => {
   const { name, email, password, role } = req.body;
-  const allowedRoles = ['farmer', 'expert', 'admin'];
+  const allowedRoles = ['farmer', 'expert', 'admin', 'delivery'];
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'Name, email, password and role are required' });
   }
