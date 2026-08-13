@@ -392,7 +392,7 @@ document.querySelectorAll('[data-page-link]').forEach((item) => {
 const sidebarLinks = document.getElementById('sidebar');
 if (sidebarLinks) {
   const extra = document.createElement('div');
-  extra.innerHTML = `<button class="nav-item" onclick="location.href='dealer-dashboard.html'">Dealer Dashboard</button><button class="nav-item" onclick="location.href='delivery-dashboard.html'">Delivery Dashboard</button>`;
+  extra.innerHTML = `<button class="nav-item" onclick="location.href='dealer-dashboard.html'">Dealer Dashboard</button><button class="nav-item" onclick="location.href='delivery-dashboard.html'">Delivery Dashboard</button><button class="nav-item" onclick="location.href='expert-dashboard.html'">Expert Dashboard</button>`;
   sidebarLinks.appendChild(extra);
 }
 const sidebar = document.getElementById('sidebar');
