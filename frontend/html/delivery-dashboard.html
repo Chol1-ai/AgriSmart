@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriSmart - Delivery Dashboard</title>
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="manifest" href="../pwa/manifest.json" />
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="sidebar"><div class="brand">AgriSmart</div></nav>
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <h1>Delivery Dashboard</h1>
+          <div class="sub">View assigned deliveries and update status.</div>
+        </div>
+      </header>
+      <div class="card">
+        <div class="card-title">Assigned Deliveries</div>
+        <div id="assignedDeliveries">Loading assigned deliveries...</div>
+      </div>
+    </main>
+  </div>
+  <script src="../js/config/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return window.location.href = 'login.html';
+      const res = await fetch(`${API_BASE_URL}/marketplace/orders`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      const list = document.getElementById('assignedDeliveries');
+      if (!Array.isArray(data)) return list.textContent = 'Unable to load deliveries.';
+      const assigned = data.filter(o => o.deliveryAgent && o.deliveryAgent.id && (String(o.deliveryAgent.id) === (JSON.parse(localStorage.getItem('user')||'{}').id || '')));
+      list.innerHTML = assigned.length ? assigned.map(o => `<div>${o._id} • ${o.total} • ${o.status}</div>`).join('') : 'No assigned deliveries yet.';
+    });
+  </script>
+</body>
+</html>

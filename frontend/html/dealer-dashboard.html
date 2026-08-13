@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriSmart - Dealer Dashboard</title>
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="manifest" href="../pwa/manifest.json" />
+  <script>
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user || !user.roles) {
+      // if not authenticated, redirect to login
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="brand">AgriSmart</div>
+    </nav>
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <h1>Dealer Dashboard</h1>
+          <div class="sub">Manage your listings, orders, and stock.</div>
+        </div>
+      </header>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Your Listings</div>
+          <div id="dealerListings">Loading...</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Orders</div>
+          <div id="dealerOrders">Loading...</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Stock Alerts</div>
+          <div id="dealerAlerts">No alerts</div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="../js/config/api.js"></script>
+  <script>
+    // Lightweight placeholder: show user name
+    document.addEventListener('DOMContentLoaded', () => {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      const listings = document.getElementById('dealerListings');
+      const orders = document.getElementById('dealerOrders');
+      if (listings) listings.textContent = `Welcome, ${u.name || 'Dealer'}. Your listings will appear here.`;
+      if (orders) orders.textContent = 'Recent orders will appear here.';
+    });
+  </script>
+</body>
+</html>
