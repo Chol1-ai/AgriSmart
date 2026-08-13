@@ -393,6 +393,33 @@ const renderNotifications = (data) => {
   }
 };
 
+// Farm location helpers: load and set profile location via auth API
+const loadFarmLocation = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Unable to fetch profile');
+    const data = await res.json();
+    const loc = data?.user?.location || data?.farm?.location || 'Not set';
+    const el = document.getElementById('farmLocationDisplay');
+    if (el) el.textContent = loc === 'Not set' ? 'No location set' : String(loc);
+  } catch (err) {
+    const el = document.getElementById('farmLocationDisplay');
+    if (el) el.textContent = 'Unable to load location';
+  }
+};
+
+const setFarmLocation = async (location) => {
+  try {
+    const body = { location };
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('Unable to save location');
+    showToast('Farm location saved.', 'success');
+    await loadFarmLocation();
+  } catch (err) {
+    showToast(err.message || 'Failed to save location', 'error');
+  }
+};
+
 const clearNotifications = async () => {
   try {
     await request('/farmer/notifications/read', { method: 'POST' });
@@ -926,6 +953,21 @@ loadNotifications();
 loadSupportHistory();
 loadCommunityPosts();
 syncOfflineOperations();
+// hook farm location UI
+const setFarmLocationBtn = document.getElementById('setFarmLocationBtn');
+if (setFarmLocationBtn) setFarmLocationBtn.addEventListener('click', () => {
+  if (!navigator.geolocation) return showToast('Geolocation not available on this device.', 'error');
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const coords = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+    setFarmLocation(coords);
+  }, (err) => showToast('Unable to get device location: ' + err.message, 'error'), { enableHighAccuracy: true });
+});
+const enterFarmLocationBtn = document.getElementById('enterFarmLocationBtn');
+if (enterFarmLocationBtn) enterFarmLocationBtn.addEventListener('click', async () => {
+  const val = prompt('Enter farm location (address, town, or coordinates):');
+  if (val) await setFarmLocation(val);
+});
+loadFarmLocation();
 
 // Navigate to details when clicking inventory rows
 document.addEventListener('click', (event) => {
