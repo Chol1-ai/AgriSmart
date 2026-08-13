@@ -22,4 +22,11 @@ router.post('/cleanup-deleted', require('../controllers/adminDashboardController
 // Restore a soft-deleted record: type = crop|livestock|pond
 router.post('/restore/:type/:id', require('../controllers/adminDashboardController').restoreDeleted);
 
+// Role and gamification management
+router.post('/users/:id/roles', require('../validators/adminValidator').setRolesValidator, require('../controllers/adminDashboardController').setUserRoles);
+router.post('/users/:id/award-xp', require('../controllers/adminDashboardController').awardXpToUser);
+router.post('/users/:id/badges', require('../controllers/adminDashboardController').addBadgeToUser);
+router.delete('/users/:id/badges', require('../controllers/adminDashboardController').removeBadgeFromUser);
+router.get('/badges', require('../controllers/adminDashboardController').listAvailableBadges);
+
 module.exports = router;

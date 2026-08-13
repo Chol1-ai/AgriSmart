@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Farm = require('../models/Farm');
 const { JWT_SECRET } = require('../config/environment');
 
-const generateToken = (user) => jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (user) => jwt.sign({ id: user._id, role: user.role, roles: user.roles || [] }, JWT_SECRET, { expiresIn: '7d' });
 
 exports.register = async (req, res) => {
   try {
@@ -30,7 +30,7 @@ exports.register = async (req, res) => {
 
     res.status(201).json({
       token: generateToken(user),
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, location: user.location, farmName: user.farmName }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, roles: user.roles || [], phone: user.phone, location: user.location, farmName: user.farmName, xp: user.xp || 0, level: user.level || 1, badges: user.badges || [] }
     });
   } catch (error) {
     res.status(500).json({ message: 'Registration failed', error: error.message });
@@ -54,7 +54,7 @@ exports.login = async (req, res) => {
 
     res.json({
       token: generateToken(user),
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, location: user.location, farmName: user.farmName }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, roles: user.roles || [], phone: user.phone, location: user.location, farmName: user.farmName, xp: user.xp || 0, level: user.level || 1, badges: user.badges || [] }
     });
   } catch (error) {
     res.status(500).json({ message: 'Login failed', error: error.message });

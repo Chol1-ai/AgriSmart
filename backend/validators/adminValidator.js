@@ -24,4 +24,11 @@ const createUserValidator = (req, res, next) => {
   next();
 };
 
-module.exports = { createAlertValidator, createUserValidator };
+const setRolesValidator = (req, res, next) => {
+  const { roles } = req.body;
+  if (!roles || !Array.isArray(roles)) return res.status(400).json({ message: 'Roles must be an array' });
+  // allow broader set managed by User schema enum
+  next();
+};
+
+module.exports = { createAlertValidator, createUserValidator, setRolesValidator };

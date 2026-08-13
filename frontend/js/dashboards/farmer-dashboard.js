@@ -125,6 +125,19 @@ const renderDashboard = (data) => {
     }
   }
   renderInventory(crops, livestock, ponds);
+
+  // Gamification display: XP, level, badges
+  try {
+    const xpVal = Number(data?.xp ?? user?.xp ?? 0);
+    const levelVal = Number(data?.level ?? user?.level ?? 1);
+    const badgesVal = Array.isArray(data?.badges) ? data.badges : Array.isArray(user?.badges) ? user.badges : [];
+    setText('farmerXP', `XP: ${xpVal}`);
+    setText('farmerLevel', `Level: ${levelVal}`);
+    const badgeEl = document.getElementById('farmerBadges');
+    if (badgeEl) badgeEl.innerHTML = badgesVal.length ? `Badges: ${badgesVal.join(', ')}` : 'Badges: <span class="small-text">None yet</span>';
+  } catch (e) {
+    // silent
+  }
 };
 
 const formatDate = (value) => {
@@ -578,10 +591,14 @@ const bindCameraActions = () => {
 
 const bindFormActions = () => {
   const cropForm = document.getElementById('cropForm');
-  if (cropForm) cropForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    submitJson('/farmer/crops', Object.fromEntries(new FormData(event.currentTarget)));
-  });
+  if (cropForm) {
+    const _cropSubmit = (event) => {
+      event.preventDefault();
+      submitJson('/farmer/crops', Object.fromEntries(new FormData(event.currentTarget)));
+    };
+    cropForm._submitHandler = _cropSubmit;
+    cropForm.addEventListener('submit', _cropSubmit);
+  }
 
   const diagnosisForm = document.getElementById('diagnosisForm');
   if (diagnosisForm) diagnosisForm.addEventListener('submit', async (event) => {
@@ -633,16 +650,24 @@ const bindFormActions = () => {
   });
 
   const livestockForm = document.getElementById('livestockForm');
-  if (livestockForm) livestockForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    submitJson('/farmer/livestock', Object.fromEntries(new FormData(event.currentTarget)));
-  });
+  if (livestockForm) {
+    const _livestockSubmit = (event) => {
+      event.preventDefault();
+      submitJson('/farmer/livestock', Object.fromEntries(new FormData(event.currentTarget)));
+    };
+    livestockForm._submitHandler = _livestockSubmit;
+    livestockForm.addEventListener('submit', _livestockSubmit);
+  }
 
   const pondForm = document.getElementById('pondForm');
-  if (pondForm) pondForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    submitJson('/farmer/ponds', Object.fromEntries(new FormData(event.currentTarget)));
-  });
+  if (pondForm) {
+    const _pondSubmit = (event) => {
+      event.preventDefault();
+      submitJson('/farmer/ponds', Object.fromEntries(new FormData(event.currentTarget)));
+    };
+    pondForm._submitHandler = _pondSubmit;
+    pondForm.addEventListener('submit', _pondSubmit);
+  }
 
   const pondSelection = document.getElementById('pondSelection');
   if (pondSelection) {
@@ -811,6 +836,31 @@ const bindNavigation = () => {
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');
   }
+
+  // Gamification quick actions
+  const askExpertQuickBtn = document.getElementById('askExpertQuickBtn');
+  if (askExpertQuickBtn) askExpertQuickBtn.addEventListener('click', async () => {
+    try {
+      // open support form prefilled
+      document.querySelector('[data-page="expert"]')?.click();
+      const form = document.getElementById('supportForm');
+      if (!form) return;
+      form.elements['subject'].value = 'Quick expert request';
+      form.elements['details'].value = 'Please advise on urgent farm issue.';
+      form.elements['category'].value = 'crop';
+      // optional: submit immediately
+      // await submitJson('/farmer/support', Object.fromEntries(new FormData(form)), 'Support request sent.');
+    } catch (error) {
+      showToast(error.message || 'Unable to open expert form', 'error');
+    }
+  });
+
+  const viewChallengesBtn = document.getElementById('viewChallengesBtn');
+  if (viewChallengesBtn) viewChallengesBtn.addEventListener('click', () => {
+    // Navigate to community for now where challenges are listed
+    document.querySelector('[data-page="community"]')?.click();
+    showToast('Challenges listed in Community Feed.', 'info');
+  });
   if (hamburger) hamburger.addEventListener('click', () => {
     if (!sidebar) return;
     if (window.innerWidth <= 768) {
@@ -893,15 +943,16 @@ const handleEditRecord = async (id) => {
     if (!form) return;
     form.elements['cropType'].value = crop.cropType || '';
     form.elements['variety'].value = crop.variety || '';
-    form.elements['plantingDate'].value = crop.plantingDate ? new Date(crop.plantingDate).toISOString().slice(0,10) : '';
+    // The crop form does not include a plantingDate input; populate fields that exist
     form.elements['expectedHarvestDate'].value = crop.expectedHarvestDate ? new Date(crop.expectedHarvestDate).toISOString().slice(0,10) : '';
     form.elements['expectedYield'].value = crop.expectedYield || '';
     // switch to crops page
     document.querySelector('[data-page="crops"]')?.click();
     // change submit to PUT
     form.dataset.editId = id;
-    form.removeEventListener('submit', form._submitHandler);
-    form._submitHandler = async (event) => {
+    const _orig = form._submitHandler;
+    if (_orig) form.removeEventListener('submit', _orig);
+    const _editHandler = async (event) => {
       event.preventDefault();
       try {
         await request(`/farmer/crops/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
@@ -911,9 +962,16 @@ const handleEditRecord = async (id) => {
         await loadDashboard();
       } catch (error) {
         showToast(error.message || 'Update failed', 'error');
+      } finally {
+        form.removeEventListener('submit', _editHandler);
+        if (_orig) {
+          form._submitHandler = _orig;
+          form.addEventListener('submit', _orig);
+        }
       }
     };
-    form.addEventListener('submit', form._submitHandler);
+    form._submitHandler = _editHandler;
+    form.addEventListener('submit', _editHandler);
     return;
   }
   const animal = (window.dashboardLivestock || []).find((a) => a._id === id);
@@ -925,8 +983,9 @@ const handleEditRecord = async (id) => {
     form.elements['count'].value = animal.count || '';
     document.querySelector('[data-page="livestock"]')?.click();
     form.dataset.editId = id;
-    form.removeEventListener('submit', form._submitHandler);
-    form._submitHandler = async (event) => {
+    const _origLivestock = form._submitHandler;
+    if (_origLivestock) form.removeEventListener('submit', _origLivestock);
+    const _editLivestock = async (event) => {
       event.preventDefault();
       try {
         await request(`/farmer/livestock/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
@@ -936,9 +995,16 @@ const handleEditRecord = async (id) => {
         await loadDashboard();
       } catch (error) {
         showToast(error.message || 'Update failed', 'error');
+      } finally {
+        form.removeEventListener('submit', _editLivestock);
+        if (_origLivestock) {
+          form._submitHandler = _origLivestock;
+          form.addEventListener('submit', _origLivestock);
+        }
       }
     };
-    form.addEventListener('submit', form._submitHandler);
+    form._submitHandler = _editLivestock;
+    form.addEventListener('submit', _editLivestock);
     return;
   }
   const pond = (window.dashboardPonds || []).find((p) => p._id === id);
@@ -951,8 +1017,9 @@ const handleEditRecord = async (id) => {
     form.elements['fingerlingCount'].value = pond.fingerlingCount || '';
     document.querySelector('[data-page="aquaculture"]')?.click();
     form.dataset.editId = id;
-    form.removeEventListener('submit', form._submitHandler);
-    form._submitHandler = async (event) => {
+    const _origPond = form._submitHandler;
+    if (_origPond) form.removeEventListener('submit', _origPond);
+    const _editPond = async (event) => {
       event.preventDefault();
       try {
         await request(`/farmer/ponds/${form.dataset.editId}`, { method: 'PUT', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
@@ -963,9 +1030,16 @@ const handleEditRecord = async (id) => {
         await loadPonds();
       } catch (error) {
         showToast(error.message || 'Update failed', 'error');
+      } finally {
+        form.removeEventListener('submit', _editPond);
+        if (_origPond) {
+          form._submitHandler = _origPond;
+          form.addEventListener('submit', _origPond);
+        }
       }
     };
-    form.addEventListener('submit', form._submitHandler);
+    form._submitHandler = _editPond;
+    form.addEventListener('submit', _editPond);
     return;
   }
 };

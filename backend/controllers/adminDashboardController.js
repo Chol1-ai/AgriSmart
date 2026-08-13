@@ -5,6 +5,7 @@ const Crop = require('../models/Crop');
 const Livestock = require('../models/Livestock');
 const Pond = require('../models/Pond');
 const Audit = require('../models/AuditLog');
+const { awardXp, addBadge, removeBadge, setRoles, listBadges } = require('../services/gamificationService');
 
 exports.getAdminSummary = async (_req, res) => {
   try {
@@ -152,5 +153,63 @@ exports.deleteUser = async (req, res) => {
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Unable to delete user', error: error.message });
+  }
+};
+
+// Administrative role management: replace roles array for a user
+exports.setUserRoles = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roles } = req.body;
+    const user = await setRoles(id, roles);
+    await Audit.create({ action: 'set-roles', userId: req.user._id, targetId: id, metadata: { roles } });
+    res.json({ message: 'Roles updated', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to update roles', error: error.message });
+  }
+};
+
+// Award XP to a user (admin action or system webhook)
+exports.awardXpToUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount = 0 } = req.body;
+    const user = await awardXp(id, Number(amount));
+    await Audit.create({ action: 'award-xp', userId: req.user._id, targetId: id, metadata: { amount } });
+    res.json({ message: 'XP awarded', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to award XP', error: error.message });
+  }
+};
+
+exports.addBadgeToUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { badge } = req.body;
+    const user = await addBadge(id, badge);
+    await Audit.create({ action: 'add-badge', userId: req.user._id, targetId: id, metadata: { badge } });
+    res.json({ message: 'Badge added', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to add badge', error: error.message });
+  }
+};
+
+exports.removeBadgeFromUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { badge } = req.body;
+    const user = await removeBadge(id, badge);
+    await Audit.create({ action: 'remove-badge', userId: req.user._id, targetId: id, metadata: { badge } });
+    res.json({ message: 'Badge removed', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to remove badge', error: error.message });
+  }
+};
+
+exports.listAvailableBadges = async (_req, res) => {
+  try {
+    res.json({ badges: listBadges() });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to list badges', error: error.message });
   }
 };

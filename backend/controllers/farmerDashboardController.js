@@ -8,6 +8,7 @@ const Alert = require('../models/Alert');
 const { analyzeLeafImage } = require('../services/diagnosisService');
 const { enqueueOperations, resolvePendingOperations, listPendingOperations } = require('../services/offlineSyncService');
 const { generateReport } = require('../services/reportService');
+const { awardXp } = require('../services/gamificationService');
 
 exports.getFarmerDashboard = async (req, res) => {
   try {
@@ -25,6 +26,12 @@ exports.getFarmerDashboard = async (req, res) => {
       crops,
       livestock,
       ponds
+      ,
+      // include gamification and roles for client display
+      xp: req.user?.xp || 0,
+      level: req.user?.level || 1,
+      badges: req.user?.badges || [],
+      roles: req.user?.roles || [req.user?.role]
     });
   } catch (error) {
     res.status(500).json({ message: 'Unable to load dashboard', error: error.message });
@@ -79,6 +86,8 @@ exports.createCrop = async (req, res) => {
       expectedYield,
       treatmentHistory
     });
+    // award XP for planting a crop (non-blocking)
+    try { await awardXp(req.user._id, 20); } catch (_) {}
     res.status(201).json(crop);
   } catch (error) {
     res.status(500).json({ message: 'Crop creation failed', error: error.message });
@@ -96,6 +105,7 @@ exports.createLivestock = async (req, res) => {
       healthRecords,
       productionData
     });
+    try { await awardXp(req.user._id, 10); } catch (_) {}
     res.status(201).json(livestock);
   } catch (error) {
     res.status(500).json({ message: 'Livestock creation failed', error: error.message });
@@ -117,6 +127,7 @@ exports.createPond = async (req, res) => {
       feedRecords,
       harvestForecast
     });
+    try { await awardXp(req.user._id, 10); } catch (_) {}
     res.status(201).json(pond);
   } catch (error) {
     res.status(500).json({ message: 'Pond creation failed', error: error.message });
@@ -224,6 +235,7 @@ exports.addWaterQualityRecord = async (req, res) => {
       { new: true }
     );
     if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    try { await awardXp(req.user._id, 5); } catch (_) {}
     res.json(pond);
   } catch (error) {
     res.status(500).json({ message: 'Unable to add water quality record', error: error.message });
@@ -246,6 +258,7 @@ exports.addFeedRecord = async (req, res) => {
       { new: true }
     );
     if (!pond) return res.status(404).json({ message: 'Pond not found' });
+    try { await awardXp(req.user._id, 2); } catch (_) {}
     res.json(pond);
   } catch (error) {
     res.status(500).json({ message: 'Unable to add feed record', error: error.message });
@@ -280,6 +293,8 @@ exports.submitSupportQuery = async (req, res) => {
       subject,
       details
     });
+    // award XP for consulting an expert
+    try { await awardXp(req.user._id, 15); } catch (_) {}
     res.status(201).json(query);
   } catch (error) {
     res.status(500).json({ message: 'Support query submission failed', error: error.message });
