@@ -32,6 +32,22 @@ const showToast = (message, type = 'info') => {
   window.setTimeout(() => toast.remove(), 5000);
 };
 const formatPrice = (price) => `UGX ${Number(price).toLocaleString('en-UG')}`;
+const token = localStorage.getItem('token');
+const headersWithAuth = (extra = {}) => ({ Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json', ...extra });
+
+const loadProductsFromServer = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/marketplace/products`);
+    if (!res.ok) throw new Error('Failed to load listings');
+    const data = await res.json();
+    listings = (Array.isArray(data) ? data : []).map((p) => ({ id: p._id, name: p.name, category: p.category, price: p.price, quantity: p.quantity, breed: '', age: '', gender: '', description: p.description, location: p.location, images: p.images || [], status: p.status, createdAt: p.createdAt }));
+    save();
+    renderListings();
+  } catch (error) {
+    console.warn('Marketplace: server load failed, using local cache', error.message);
+    renderListings();
+  }
+};
 function renderListings() {
   const search = $('searchInput').value.toLowerCase(); const category = $('categoryFilter').value; const status = $('statusFilter').value; const sort = $('sortFilter').value;
   const filtered = listings.filter((item) => (category === 'all' || item.category === category) && (status === 'all' || item.status === status) && [item.name,item.description,item.breed,item.location].some((value) => String(value || '').toLowerCase().includes(search)));
@@ -44,7 +60,8 @@ function closeModal() { $('modalOverlay').classList.remove('active'); $('modalOv
 function renderPreviews() { $('imagePreview').innerHTML = uploadedImages.map((image,index) => `<span class="preview"><img src="${image}" alt="Selected upload"><button type="button" data-remove="${index}" aria-label="Remove image">&times;</button></span>`).join(''); }
 function readFiles(files) { [...files].forEach((file) => { if (!file.type.startsWith('image/') || file.size > 5*1024*1024) { showNotice(`${file.name} was skipped. Use an image smaller than 5 MB.`, 'error'); return; } const reader = new FileReader(); reader.onload = () => { uploadedImages.push(reader.result); renderPreviews(); }; reader.readAsDataURL(file); }); }
 $('openModalButton').onclick = () => openModal(); $('emptyStateButton').onclick = () => openModal(); $('closeModalButton').onclick = closeModal; $('modalOverlay').onclick = (event) => { if (event.target === $('modalOverlay')) closeModal(); }; $('productCategory').onchange = () => { $('animalFields').hidden = !animalCategories.includes($('productCategory').value); }; $('imageUploadArea').onclick = () => $('imageInput').click(); $('imageInput').onchange = (event) => readFiles(event.target.files); $('imageUploadArea').ondragover = (event) => event.preventDefault(); $('imageUploadArea').ondrop = (event) => { event.preventDefault(); readFiles(event.dataTransfer.files); };
-['searchInput','categoryFilter','statusFilter','sortFilter'].forEach((id) => $(id).addEventListener(id === 'searchInput' ? 'input' : 'change', renderListings)); $('refreshButton').onclick = () => { renderListings(); showNotice('Listings refreshed.', 'success'); showToast('Listings refreshed.', 'success'); };
+['searchInput','categoryFilter','statusFilter','sortFilter'].forEach((id) => $(id).addEventListener(id === 'searchInput' ? 'input' : 'change', renderListings));
+$('refreshButton').onclick = async () => { await loadProductsFromServer(); showNotice('Listings refreshed.', 'success'); showToast('Listings refreshed.', 'success'); };
 $('imagePreview').onclick = (event) => { const button = event.target.closest('[data-remove]'); if (button) { uploadedImages.splice(Number(button.dataset.remove),1); renderPreviews(); } };
 
 $('listingsGrid').onclick = async (event) => {
@@ -56,11 +73,55 @@ $('listingsGrid').onclick = async (event) => {
   else if (button.dataset.delete && item) {
     const confirmed = await (window.showConfirmModal ? window.showConfirmModal(`Delete “${item.name}”?`) : Promise.resolve(confirm(`Delete “${item.name}”?`)));
     if (!confirmed) return;
-    listings = listings.filter((listing) => listing.id !== id);
-    save();
-    renderListings();
-    showNotice('Listing deleted.', 'success');
+    try {
+      if (token && String(item.id).length > 8) {
+        const res = await fetch(`${API_BASE_URL}/marketplace/products/${item.id}`, { method: 'DELETE', headers: headersWithAuth() });
+        if (!res.ok) throw new Error('Delete failed');
+        await loadProductsFromServer();
+      } else {
+        listings = listings.filter((listing) => listing.id !== id);
+        save();
+        renderListings();
+      }
+      showNotice('Listing deleted.', 'success');
+    } catch (error) {
+      showNotice(error.message || 'Unable to delete listing', 'error');
+    }
   } else if (button.dataset.view && item) alert(`${item.name}\n\n${formatPrice(item.price)}\nQuantity: ${item.quantity}\nLocation: ${item.location || 'Not specified'}\n\n${item.description}`);
 };
-$('listingForm').onsubmit = (event) => { event.preventDefault(); const existing=listings.find((item) => item.id===editingId); const listing={ id:editingId || Date.now(), name:$('productName').value.trim(), category:$('productCategory').value, price:Number($('productPrice').value), quantity:$('productQuantity').value.trim(), location:$('productLocation').value.trim(), description:$('productDescription').value.trim(), breed:$('animalBreed').value.trim(), age:$('animalAge').value, gender:$('animalGender').value, images:uploadedImages, status:existing?.status || 'active', createdAt:existing?.createdAt || new Date().toISOString() }; listings=existing ? listings.map((item) => item.id===editingId ? listing : item) : [listing,...listings]; save(); renderListings(); closeModal(); showNotice(existing ? 'Listing updated.' : 'Listing published.', 'success'); showToast(existing ? 'Listing updated.' : 'Listing published.', 'success'); };
+$('listingForm').onsubmit = async (event) => {
+  event.preventDefault();
+  const existing = listings.find((item) => item.id === editingId);
+  const payload = { name: $('productName').value.trim(), category: $('productCategory').value, price: Number($('productPrice').value), quantity: $('productQuantity').value.trim(), location: $('productLocation').value.trim(), description: $('productDescription').value.trim(), images: uploadedImages };
+  try {
+    if (existing && existing.id && String(existing.id).length > 8 && token) {
+      const res = await fetch(`${API_BASE_URL}/marketplace/products/${existing.id}`, { method: 'PUT', headers: headersWithAuth(), body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('Update failed');
+      await loadProductsFromServer();
+      showNotice('Listing updated.', 'success');
+      showToast('Listing updated.', 'success');
+      closeModal();
+      return;
+    }
+    if (token) {
+      const res = await fetch(`${API_BASE_URL}/marketplace/products`, { method: 'POST', headers: headersWithAuth(), body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('Publish failed');
+      await loadProductsFromServer();
+      showNotice('Listing published.', 'success');
+      showToast('Listing published.', 'success');
+      closeModal();
+      return;
+    }
+    const listing = { id: editingId || Date.now(), ...payload, status: 'active', createdAt: new Date().toISOString() };
+    listings = existing ? listings.map((item) => item.id === editingId ? listing : item) : [listing, ...listings];
+    save();
+    renderListings();
+    closeModal();
+    showNotice(existing ? 'Listing updated.' : 'Listing published.', 'success');
+    showToast(existing ? 'Listing updated.' : 'Listing published.', 'success');
+  } catch (error) {
+    showNotice(error.message || 'Unable to publish listing', 'error');
+    showToast(error.message || 'Unable to publish listing', 'error');
+  }
+};
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); }); renderListings();
