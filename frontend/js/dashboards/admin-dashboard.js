@@ -126,6 +126,59 @@ const loadSupportQueries = async () => {
   }
 };
 
+const loadOrders = async () => {
+  const table = document.getElementById('orderTable');
+  const orderTable = document.getElementById('orderTable');
+  if (orderTable) {
+    orderTable.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-assign-order]');
+      if (!button) return;
+      const id = button.dataset.assignOrder;
+      const select = document.querySelector(`select[data-order-id="${id}"]`);
+      if (!select) return;
+      const agentId = select.value;
+      if (!agentId) return alert('Please select an agent');
+      button.disabled = true;
+      try {
+        await request(`/marketplace/orders/${id}/assign`, { method: 'POST', body: JSON.stringify({ agentId }) });
+        showToast('Agent assigned to order.', 'success');
+        await loadOrders();
+      } catch (error) {
+        showToast(error.message || 'Unable to assign agent.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+  if (!table) return;
+  try {
+    const orders = await request('/marketplace/orders');
+    const entries = Array.isArray(orders) ? orders : [];
+    // fetch agents for selection
+    const agents = await request('/admin/delivery-agents');
+    table.innerHTML = entries.length
+      ? entries.map((o) => `
+        <tr>
+          <td>${o._id}</td>
+          <td>${o.buyerId?.name || o.buyer || 'Buyer'}</td>
+          <td>${o.total?.toFixed ? o.total.toFixed(2) : o.total}</td>
+          <td><span class="status-tag">${o.status}</span></td>
+          <td>${o.deliveryAgent?.name || 'Unassigned'}</td>
+          <td>
+            <select data-order-id="${o._id}" class="agent-select">
+              <option value="">-- Assign agent --</option>
+              ${agents.map(a => `<option value="${a._id}">${a.name} (${a.email})</option>`).join('')}
+            </select>
+            <button class="btn-secondary" data-assign-order="${o._id}">Assign</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="6">No orders found.</td></tr>';
+  } catch (error) {
+    table.innerHTML = `<tr><td colspan="6">${error.message || 'Unable to load orders.'}</td></tr>`;
+  }
+};
+
+
 const loadSupportPreview = async () => {
   const preview = document.getElementById('supportPreviewList');
   if (!preview) return;

@@ -20,6 +20,7 @@
                     class="fas fa-headset"></i> Support Requests</button><button class="nav-item" data-page="alerts"><i
                     class="fas fa-bullhorn"></i> Content & Alerts</button><button class="nav-item" data-page="database"><i
                     class="fas fa-database"></i> Database</button>
+                <button class="nav-item" data-page="orders"><i class="fas fa-boxes"></i> Orders</button>
             <div class="user-badge">
                 <div class="avatar" id="userAvatar">AD</div>
                 <div>
@@ -148,6 +149,33 @@
                             </thead>
                             <tbody id="supportQueryTable">
                                 <tr><td colspan="5">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            <section class="page" id="page-orders">
+                <header class="page-header">
+                    <div>
+                        <h1>Orders</h1>
+                        <div class="sub">Manage marketplace orders and assign delivery agents.</div>
+                    </div>
+                </header>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Buyer</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Delivery Agent</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderTable">
+                                <tr><td colspan="6">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>

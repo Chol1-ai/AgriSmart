@@ -21,6 +21,7 @@ router.get('/orders', auth, listOrdersForUser);
 router.get('/orders/:id', auth, getOrder);
 
 // Admin order list
-router.get('/admin/orders', auth, adminListOrders);
+// Admin-only orders listing
+router.get('/admin/orders', auth, require('../middleware/roles').checkRole('admin'), adminListOrders);
 
 module.exports = router;

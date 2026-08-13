@@ -111,12 +111,14 @@ exports.assignDeliveryAgent = async (req, res) => {
     const { agentId } = req.body;
     const order = await Order.findById(id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
-    // only admin can assign for now
-    if (!req.user.roles.includes('admin')) return res.status(403).json({ message: 'Not authorized' });
-    order.deliveryAgent = agentId;
-    order.status = 'picked';
+    // validate agent exists and has delivery role
+    const User = require('../models/User');
+    const agent = await User.findOne({ _id: agentId, $or: [{ role: 'delivery' }, { roles: 'delivery' }] });
+    if (!agent) return res.status(400).json({ message: 'Agent not found or not a delivery agent' });
+    order.deliveryAgent = { id: agent._id, name: agent.name, phone: agent.phone };
+    order.status = 'assigned';
     await order.save();
-    res.json({ message: 'Delivery agent assigned', order });
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: 'Unable to assign delivery agent', error: error.message });
   }

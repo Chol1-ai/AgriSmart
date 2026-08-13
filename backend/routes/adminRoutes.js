@@ -28,5 +28,6 @@ router.post('/users/:id/award-xp', require('../controllers/adminDashboardControl
 router.post('/users/:id/badges', require('../controllers/adminDashboardController').addBadgeToUser);
 router.delete('/users/:id/badges', require('../controllers/adminDashboardController').removeBadgeFromUser);
 router.get('/badges', require('../controllers/adminDashboardController').listAvailableBadges);
+router.get('/delivery-agents', require('../controllers/adminDashboardController').listDeliveryAgents);
 
 module.exports = router;

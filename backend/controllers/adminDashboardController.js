@@ -213,3 +213,13 @@ exports.listAvailableBadges = async (_req, res) => {
     res.status(500).json({ message: 'Unable to list badges', error: error.message });
   }
 };
+
+// List users who are delivery agents (role or roles array contains 'delivery')
+exports.listDeliveryAgents = async (_req, res) => {
+  try {
+    const agents = await User.find({ $or: [{ role: 'delivery' }, { roles: 'delivery' }] }).select('name email phone location');
+    res.json(agents);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load delivery agents', error: error.message });
+  }
+};

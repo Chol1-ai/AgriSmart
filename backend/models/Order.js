@@ -13,7 +13,12 @@ const orderSchema = new mongoose.Schema({
   total: { type: Number, required: true },
   status: { type: String, enum: ['placed','confirmed','picked','in_transit','delivered','cancelled'], default: 'placed' },
   deliveryAddress: { type: String, default: '' },
-  deliveryAgent: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // store a snapshot of delivery agent details when assigned
+  deliveryAgent: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    name: { type: String },
+    phone: { type: String }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 
