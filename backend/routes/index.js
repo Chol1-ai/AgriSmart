@@ -8,6 +8,7 @@ router.use('/admin', require('./adminRoutes'));
 router.use('/marketplace', require('./marketplaceRoutes'));
 router.use('/academy', require('./academyRoutes'));
 router.use('/gamification', require('./gamificationRoutes'));
+router.use('/ai', require('./assistantRoutes'));
 
 router.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'agrismart-backend' });
