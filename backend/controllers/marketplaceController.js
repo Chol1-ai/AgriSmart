@@ -15,6 +15,28 @@ exports.listProducts = async (req, res) => {
   }
 };
 
+// List products for the authenticated seller
+exports.listSellerProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ seller: req.user._id, deleted: false }).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to list seller products', error: error.message });
+  }
+};
+
+// List orders that include this seller's products
+exports.listSellerOrders = async (req, res) => {
+  try {
+    const sellerProducts = await Product.find({ seller: req.user._id, deleted: false }).select('_id');
+    const productIds = sellerProducts.map(p => p._id);
+    const orders = await Order.find({ 'items.productId': { $in: productIds } }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to list seller orders', error: error.message });
+  }
+};
+
 exports.getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
