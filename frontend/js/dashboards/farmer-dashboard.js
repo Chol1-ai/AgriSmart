@@ -6,6 +6,35 @@ const notificationBell = document.getElementById('notificationBell');
 const notificationBadge = document.getElementById('notificationBadge');
 const notificationPanel = document.getElementById('notificationPanel');
 
+// Role-based visibility: show/hide nav items based on `user.roles` or `user.role`
+const applyRoleVisibility = () => {
+  const roles = Array.isArray(user?.roles) && user.roles.length ? user.roles : [user?.role];
+  const isExpert = roles.includes('expert') || roles.includes('admin');
+  const isAdmin = roles.includes('admin');
+  const expertNav = document.querySelector('.nav-item[data-page="expert"]');
+  if (expertNav) expertNav.style.display = isExpert ? '' : 'none';
+  // marketplace link is available to all authenticated users; if we wanted to hide for some roles, adjust here
+  // add admin dashboard link dynamically for admins
+  const sidebar = document.getElementById('sidebar');
+  if (isAdmin && sidebar && !sidebar.querySelector('.nav-item.admin-link')) {
+    const btn = document.createElement('a');
+    btn.className = 'nav-item admin-link';
+    btn.href = 'admin-dashboard.html';
+    btn.innerHTML = '<i class="fas fa-cog"></i> Admin';
+    sidebar.appendChild(btn);
+  }
+};
+
+// Notifications: allow local dismiss of alert items so users can clear noisy announcements
+const DISMISSED_ALERTS_KEY = 'agrismart.dismissedAlerts';
+const getDismissedAlerts = () => JSON.parse(localStorage.getItem(DISMISSED_ALERTS_KEY) || '[]');
+const dismissAlertLocal = (alertId) => {
+  if (!alertId) return;
+  const list = getDismissedAlerts();
+  if (!list.includes(alertId)) list.push(alertId);
+  localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(list));
+};
+
 if (!token) {
   window.location.href = 'index.html';
 }
@@ -339,8 +368,10 @@ const syncOfflineOperations = async () => {
 const renderNotifications = (data) => {
   const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
   const supportUpdates = Array.isArray(data?.supportUpdates) ? data.supportUpdates : [];
+  const dismissed = getDismissedAlerts();
+  const visibleAlerts = alerts.filter((a) => !dismissed.includes(String(a._id)));
   const items = [
-    ...alerts.map((alert) => ({ type: 'alert', ...alert })),
+    ...visibleAlerts.map((alert) => ({ type: 'alert', ...alert })),
     ...supportUpdates.map((update) => ({ type: 'support', ...update }))
   ];
 
@@ -352,7 +383,7 @@ const renderNotifications = (data) => {
           <span>${items.length} notification${items.length === 1 ? '' : 's'}</span>
           <button class="notification-clear" type="button">Clear all</button>
         </div>` + items.map((item, index) => `
-        <div class="notification-item" data-index="${index}" data-type="${item.type}">
+        <div class="notification-item" data-index="${index}" data-type="${item.type}" data-id="${escapeHtml(item._id || '')}">
           <div class="notification-title">${escapeHtml(item.type === 'support' ? item.subject : item.title || 'Alert')}</div>
           <div class="notification-meta">${escapeHtml(item.type === 'support' ? 'Expert response available' : item.region || 'Regional')} • ${escapeHtml(new Date(item.createdAt || Date.now()).toLocaleString())}</div>
           <div class="notification-meta">${escapeHtml(item.type === 'support' ? item.response || 'Your support query has an update.' : item.message || '')}</div>
@@ -470,6 +501,10 @@ const dismissNotification = async (item) => {
     } catch (_error) {
       // ignore dismiss failures
     }
+  } else if (type === 'alert') {
+    // locally remember dismissed alerts
+    const id = item.dataset.id;
+    if (id) dismissAlertLocal(id);
   }
 };
 
@@ -881,6 +916,8 @@ const handleLogout = () => {
 };
 
 window.addEventListener('online', syncOfflineOperations);
+// Apply role visibility before binding navigation so nav items reflect user roles
+applyRoleVisibility();
 bindNavigation();
 bindCameraActions();
 bindFormActions();
