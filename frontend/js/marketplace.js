@@ -53,7 +53,10 @@ function renderListings() {
   const filtered = listings.filter((item) => (category === 'all' || item.category === category) && (status === 'all' || item.status === status) && [item.name,item.description,item.breed,item.location].some((value) => String(value || '').toLowerCase().includes(search)));
   filtered.sort((a,b) => sort === 'price-low' ? a.price-b.price : sort === 'price-high' ? b.price-a.price : new Date(b.createdAt)-new Date(a.createdAt));
   $('emptyState').hidden = filtered.length !== 0;
-  $('listingsGrid').innerHTML = filtered.map((item) => `<article class="listing-card"><div class="listing-image">${item.images?.[0] ? `<img src="${item.images[0]}" alt="${escapeHtml(item.name)}">` : icons[item.category] || icons.other}<span class="category-badge">${escapeHtml(item.category)}</span></div><div class="listing-body"><h2>${escapeHtml(item.name)}</h2><div class="price">${formatPrice(item.price)}</div><div class="meta"><i class="fas fa-box"></i> ${escapeHtml(item.quantity)}${item.location ? ` &middot; <i class="fas fa-location-dot"></i> ${escapeHtml(item.location)}` : ''}</div><p class="description">${escapeHtml(item.description)}</p><span class="status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span><div class="card-actions"><button type="button" data-view="${item.id}"><i class="fas fa-eye"></i> View</button><button type="button" class="edit" data-edit="${item.id}"><i class="fas fa-pen"></i> Edit</button><button type="button" class="delete" data-delete="${item.id}" aria-label="Delete ${escapeHtml(item.name)}"><i class="fas fa-trash"></i></button></div></div></article>`).join('');
+    $('listingsGrid').innerHTML = filtered.map((item) => {
+      const buyBtn = (item.status === 'active') ? `<button type="button" class="buy" data-buy="${item.id}"><i class="fas fa-shopping-cart"></i> Buy</button>` : '';
+      return `<article class="listing-card"><div class="listing-image">${item.images?.[0] ? `<img src="${item.images[0]}" alt="${escapeHtml(item.name)}">` : icons[item.category] || icons.other}<span class="category-badge">${escapeHtml(item.category)}</span></div><div class="listing-body"><h2>${escapeHtml(item.name)}</h2><div class="price">${formatPrice(item.price)}</div><div class="meta"><i class="fas fa-box"></i> ${escapeHtml(item.quantity)}${item.location ? ` &middot; <i class="fas fa-location-dot"></i> ${escapeHtml(item.location)}` : ''}</div><p class="description">${escapeHtml(item.description)}</p><span class="status ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span><div class="card-actions"><button type="button" data-view="${item.id}"><i class="fas fa-eye"></i> View</button><button type="button" class="edit" data-edit="${item.id}"><i class="fas fa-pen"></i> Edit</button><button type="button" class="delete" data-delete="${item.id}" aria-label="Delete ${escapeHtml(item.name)}"><i class="fas fa-trash"></i></button>${buyBtn}</div></div></article>`;
+    }).join('');
 }
 function openModal(item) { editingId = item?.id || null; $('listingForm').reset(); uploadedImages = item?.images ? [...item.images] : []; if (item) { ['Name','Category','Price','Quantity','Location','Description'].forEach((field) => { $(`product${field}`).value = item[field.toLowerCase()] || ''; }); $('animalBreed').value=item.breed||''; $('animalAge').value=item.age||''; $('animalGender').value=item.gender||''; } $('modalTitle').innerHTML = `<i class="fas fa-${item ? 'pen' : 'plus-circle'}"></i> ${item ? 'Edit' : 'New'} listing`; $('submitText').textContent = item ? 'Update listing' : 'Publish listing'; $('animalFields').hidden = !animalCategories.includes($('productCategory').value); renderPreviews(); $('modalOverlay').classList.add('active'); $('modalOverlay').setAttribute('aria-hidden','false'); $('productName').focus(); }
 function closeModal() { $('modalOverlay').classList.remove('active'); $('modalOverlay').setAttribute('aria-hidden','true'); }
@@ -67,7 +70,8 @@ $('imagePreview').onclick = (event) => { const button = event.target.closest('[d
 $('listingsGrid').onclick = async (event) => {
   const button = event.target.closest('button');
   if (!button) return;
-  const id = Number(button.dataset.edit || button.dataset.delete || button.dataset.view);
+  const id = button.dataset.edit || button.dataset.delete || button.dataset.view || button.dataset.buy;
+  const numericId = Number(id);
   const item = listings.find((listing) => listing.id === id);
   if (button.dataset.edit) openModal(item);
   else if (button.dataset.delete && item) {
@@ -88,6 +92,26 @@ $('listingsGrid').onclick = async (event) => {
       showNotice(error.message || 'Unable to delete listing', 'error');
     }
   } else if (button.dataset.view && item) alert(`${item.name}\n\n${formatPrice(item.price)}\nQuantity: ${item.quantity}\nLocation: ${item.location || 'Not specified'}\n\n${item.description}`);
+  else if (button.dataset.buy && item) {
+    if (!token) return showNotice('Please sign in to buy.', 'error');
+    try {
+      const qty = Number(prompt('Quantity to buy', '1')) || 1;
+      const address = prompt('Delivery address (or leave blank to use profile)') || '';
+      const payload = { items: [{ productId: item.id, quantity: qty }], deliveryAddress: address };
+      const res = await fetch(`${API_BASE_URL}/marketplace/orders`, { method: 'POST', headers: headersWithAuth(), body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('Order creation failed');
+      const order = await res.json();
+      // simulate payment
+      const payRes = await fetch(`${API_BASE_URL}/marketplace/orders/${order._id}/pay`, { method: 'POST', headers: headersWithAuth() });
+      if (!payRes.ok) throw new Error('Payment failed');
+      showNotice('Order placed successfully.', 'success');
+      showToast('Order placed. Check Orders in your account.', 'success');
+      await loadProductsFromServer();
+    } catch (err) {
+      showNotice(err.message || 'Unable to place order', 'error');
+      showToast(err.message || 'Unable to place order', 'error');
+    }
+  }
 };
 $('listingForm').onsubmit = async (event) => {
   event.preventDefault();

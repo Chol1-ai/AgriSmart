@@ -14,6 +14,9 @@ router.delete('/products/:id', auth, deleteProduct);
 
 // Orders
 router.post('/orders', auth, createOrder);
+router.post('/orders/:id/pay', auth, require('../controllers/marketplaceController').payOrder);
+router.post('/orders/:id/assign', auth, require('../controllers/marketplaceController').assignDeliveryAgent);
+router.post('/orders/:id/status', auth, require('../controllers/marketplaceController').updateOrderStatus);
 router.get('/orders', auth, listOrdersForUser);
 router.get('/orders/:id', auth, getOrder);
 

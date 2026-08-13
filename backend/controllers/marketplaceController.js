@@ -88,6 +88,61 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+// Simulate payment for an order (no external payment integration)
+exports.payOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (String(order.buyer) !== String(req.user._id) && !req.user.roles.includes('admin')) return res.status(403).json({ message: 'Not authorized' });
+    if (order.status !== 'placed') return res.status(400).json({ message: 'Order already processed' });
+    order.status = 'confirmed';
+    await order.save();
+    res.json({ message: 'Payment confirmed', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Payment failed', error: error.message });
+  }
+};
+
+// Assign a delivery agent to an order (admin or seller)
+exports.assignDeliveryAgent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { agentId } = req.body;
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    // only admin can assign for now
+    if (!req.user.roles.includes('admin')) return res.status(403).json({ message: 'Not authorized' });
+    order.deliveryAgent = agentId;
+    order.status = 'picked';
+    await order.save();
+    res.json({ message: 'Delivery agent assigned', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to assign delivery agent', error: error.message });
+  }
+};
+
+// Update order status (delivery agent or admin)
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const allowed = ['confirmed','picked','in_transit','delivered','cancelled'];
+    if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' });
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    // deliveryAgent or admin can update
+    if (!req.user.roles.includes('admin') && String(order.deliveryAgent || '') !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Not authorized to update status' });
+    }
+    order.status = status;
+    await order.save();
+    res.json({ message: 'Order status updated', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to update status', error: error.message });
+  }
+};
+
 exports.listOrdersForUser = async (req, res) => {
   try {
     const orders = await Order.find({ buyer: req.user._id }).sort({ createdAt: -1 });
