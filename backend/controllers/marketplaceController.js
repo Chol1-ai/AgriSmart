@@ -142,6 +142,7 @@ exports.assignDeliveryAgent = async (req, res) => {
     await order.save();
     res.json(order);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Unable to assign delivery agent', error: error.message });
   }
 };
@@ -191,7 +192,11 @@ exports.getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('items.productId');
     if (!order) return res.status(404).json({ message: 'Order not found' });
-    if (String(order.buyer) !== String(req.user._id) && !req.user.roles.includes('admin')) return res.status(403).json({ message: 'Access denied' });
+    const isAdmin = req.user && (req.user.role === 'admin' || (Array.isArray(req.user.roles) && req.user.roles.includes('admin')));
+    if (String(order.buyer) !== String(req.user._id) && !isAdmin) {
+      console.error('Access denied for getOrder', { requestedOrderBuyer: String(order.buyer), userId: String(req.user._id), userRole: req.user.role, userRoles: req.user.roles });
+      return res.status(403).json({ message: 'Access denied' });
+    }
     res.json(order);
   } catch (error) {
     res.status(500).json({ message: 'Unable to load order', error: error.message });

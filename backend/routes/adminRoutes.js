@@ -29,5 +29,9 @@ router.post('/users/:id/badges', require('../controllers/adminDashboardControlle
 router.delete('/users/:id/badges', require('../controllers/adminDashboardController').removeBadgeFromUser);
 router.get('/badges', require('../controllers/adminDashboardController').listAvailableBadges);
 router.get('/delivery-agents', require('../controllers/adminDashboardController').listDeliveryAgents);
+// Academy management
+router.post('/academy/courses', require('../controllers/academyController').createCourse);
+router.put('/academy/courses/:id', require('../controllers/academyController').updateCourse);
+router.delete('/academy/courses/:id', require('../controllers/academyController').deleteCourse);
 
 module.exports = router;

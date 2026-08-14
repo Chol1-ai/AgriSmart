@@ -6,9 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
   // Primary legacy role (kept for compatibility). New multi-role support uses `roles`.
-  role: { type: String, enum: ['farmer', 'expert', 'admin'], default: 'farmer' },
+  role: { type: String, enum: ['farmer', 'expert', 'admin', 'delivery'], default: 'farmer' },
   // Support multiple roles per user (e.g. farmer + cooperative manager)
-  roles: { type: [String], enum: ['farmer','farm_worker','expert','buyer','supplier','transporter','cooperative_manager','financial_partner','agriculture_officer','admin','platform_admin'], default: ['farmer'] },
+  roles: { type: [String], enum: ['farmer','farm_worker','expert','buyer','supplier','transporter','cooperative_manager','financial_partner','agriculture_officer','admin','platform_admin','delivery'], default: ['farmer'] },
   // Gamification fields
   xp: { type: Number, default: 0 },
   level: { type: Number, default: 1 },
